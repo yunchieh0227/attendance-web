@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>員工打卡系統</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body {
+      font-family: Arial, "Noto Sans TC", sans-serif;
+      background: #f5f7fb;
+      margin: 0;
+      padding: 24px;
+      color: #222;
+    }
+    .card {
+      max-width: 420px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+    h1 {
+      font-size: 24px;
+      margin-top: 0;
+    }
+    .info {
+      margin: 12px 0 20px;
+      line-height: 1.8;
+    }
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin: 8px 0;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .in { background: #06c755; color: white; }
+    .out { background: #222; color: white; }
+    .record { background: #e9eef5; color: #222; }
+    .log {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #555;
+      background: #f7f7f7;
+      border-radius: 12px;
+      padding: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>員工打卡系統</h1>
+    <div class="info">
+      <div>姓名：<span id="name">讀取中...</span></div>
+      <div>LINE User ID：<span id="userId">讀取中...</span></div>
+      <div>模式：<span id="mode">一般</span></div>
+    </div>
+
+    <button class="in" id="clockInBtn">上班打卡</button>
+    <button class="out" id="clockOutBtn">下班打卡</button>
+    <button class="record" id="recordBtn">查看本期紀錄</button>
+
+    <div class="log" id="log">尚未操作</div>
+  </div>
+
+  <script>
+    const LIFF_ID = "2009557141-tTweS0in"; // 換成你的 LIFF ID
+    const logEl = document.getElementById("log");
+
+    function log(message) {
+      logEl.textContent = message;
+      console.log(message);
+    }
+
+    function getMode() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("action") || "home";
+    }
+
+    function setModeText(mode) {
+      const modeMap = {
+        in: "上班打卡",
+        out: "下班打卡",
+        records: "查看紀錄",
+        home: "一般"
+      };
+      document.getElementById("mode").textContent = modeMap[mode] || mode;
+    }
+
+    function bindButtons(profile) {
+      document.getElementById("clockInBtn").onclick = () => {
+        const payload = {
+          action: "clock_in",
+          userId: profile.userId,
+          displayName: profile.displayName,
+          time: new Date().toISOString()
+        };
+        log("上班打卡資料：\n" + JSON.stringify(payload, null, 2));
+        // 之後這裡可改成 fetch('/api/clock-in', { method: 'POST', ... })
+      };
+
+      document.getElementById("clockOutBtn").onclick = () => {
+        const payload = {
+          action: "clock_out",
+          userId: profile.userId,
+          displayName: profile.displayName,
+          time: new Date().toISOString()
+        };
+        log("下班打卡資料：\n" + JSON.stringify(payload, null, 2));
+      };
+
+      document.getElementById("recordBtn").onclick = () => {
+        log("之後這裡可以串查看本期紀錄 API");
+      };
+    }
+
+    async function main() {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        document.getElementById("name").textContent = profile.displayName;
+        document.getElementById("userId").textContent = profile.userId;
+
+        const mode = getMode();
+        setModeText(mode);
+
+        if (mode === "in") {
+          log("目前是從『上班打卡』入口進來");
+        } else if (mode === "out") {
+          log("目前是從『下班打卡』入口進來");
+        } else if (mode === "records") {
+          log("目前是從『查看紀錄』入口進來");
+        } else {
+          log("LIFF 初始化成功，已讀到使用者資料");
+        }
+
+        bindButtons(profile);
+      } catch (err) {
+        log("初始化失敗：\n" + (err?.message || err));
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>
