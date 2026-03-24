@@ -8,74 +8,158 @@
   <style>
     body {
       font-family: Arial, "Noto Sans TC", sans-serif;
-      background: #f5f7fb;
+      background: #f3f4f8;
       margin: 0;
       padding: 24px;
       color: #222;
     }
+
     .card {
-      max-width: 420px;
+      max-width: 460px;
       margin: 0 auto;
-      background: white;
-      border-radius: 16px;
+      background: #fff;
+      border-radius: 20px;
       padding: 24px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
     }
+
     h1 {
-      font-size: 24px;
-      margin-top: 0;
+      margin: 0 0 24px;
+      font-size: 32px;
+      font-weight: 800;
     }
+
     .info {
-      margin: 12px 0 20px;
       line-height: 1.8;
+      font-size: 18px;
+      margin-bottom: 24px;
+      word-break: break-word;
     }
+
+    .info div {
+      margin-bottom: 6px;
+    }
+
     button {
       width: 100%;
       border: none;
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin: 8px 0;
-      font-size: 16px;
+      border-radius: 16px;
+      padding: 18px 16px;
+      margin: 10px 0;
+      font-size: 20px;
       cursor: pointer;
+      transition: opacity 0.2s ease;
     }
-    .in { background: #06c755; color: white; }
-    .out { background: #222; color: white; }
-    .record { background: #e9eef5; color: #222; }
-    .log {
-      margin-top: 20px;
-      font-size: 14px;
-      color: #555;
+
+    button:hover {
+      opacity: 0.92;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .in {
+      background: #06c755;
+      color: white;
+    }
+
+    .out {
+      background: #1f1f1f;
+      color: white;
+    }
+
+    .record {
+      background: #e9edf3;
+      color: #222;
+    }
+
+    .panel {
+      margin-top: 24px;
       background: #f7f7f7;
-      border-radius: 12px;
-      padding: 12px;
+      border-radius: 14px;
+      padding: 16px;
+      font-size: 15px;
+      line-height: 1.7;
       white-space: pre-wrap;
       word-break: break-word;
+    }
+
+    .success {
+      background: #eefaf3;
+      color: #146c36;
+    }
+
+    .error {
+      background: #fff1f1;
+      color: #a12626;
+    }
+
+    .hint {
+      font-size: 14px;
+      color: #666;
+      margin-top: 12px;
     }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>員工打卡系統</h1>
+
     <div class="info">
       <div>姓名：<span id="name">讀取中...</span></div>
       <div>LINE User ID：<span id="userId">讀取中...</span></div>
       <div>模式：<span id="mode">一般</span></div>
+      <div>目前前端時間：<span id="frontendTime">尚未取得</span></div>
+      <div>目前定位：<span id="locationText">尚未取得</span></div>
     </div>
 
     <button class="in" id="clockInBtn">上班打卡</button>
     <button class="out" id="clockOutBtn">下班打卡</button>
     <button class="record" id="recordBtn">查看本期紀錄</button>
 
-    <div class="log" id="log">尚未操作</div>
+    <div class="panel" id="resultPanel">尚未操作</div>
+    <div class="hint">
+      目前畫面會先顯示前端可取得的時間；正式打卡時間之後請以後端伺服器時間為準。
+    </div>
   </div>
 
   <script>
-    const LIFF_ID = "2009557141-tTweS0in"; // 換成你的 LIFF ID
-    const logEl = document.getElementById("log");
+    const LIFF_ID = "2009557141-tTweS0in";
 
-    function log(message) {
-      logEl.textContent = message;
+    // 之後把這裡換成你的後端 API
+    const API_BASE_URL = "https://your-backend.example.com";
+
+    const nameEl = document.getElementById("name");
+    const userIdEl = document.getElementById("userId");
+    const modeEl = document.getElementById("mode");
+    const frontendTimeEl = document.getElementById("frontendTime");
+    const locationTextEl = document.getElementById("locationText");
+    const resultPanel = document.getElementById("resultPanel");
+
+    const clockInBtn = document.getElementById("clockInBtn");
+    const clockOutBtn = document.getElementById("clockOutBtn");
+    const recordBtn = document.getElementById("recordBtn");
+
+    let currentProfile = null;
+
+    function setPanel(message, type = "") {
+      resultPanel.textContent = message;
+      resultPanel.className = "panel";
+      if (type === "success") resultPanel.classList.add("success");
+      if (type === "error") resultPanel.classList.add("error");
       console.log(message);
+    }
+
+    function formatLocalTime(date = new Date()) {
+      const yyyy = date.getFullYear();
+      const MM = String(date.getMonth() + 1).padStart(2, "0");
+      const dd = String(date.getDate()).padStart(2, "0");
+      const hh = String(date.getHours()).padStart(2, "0");
+      const mm = String(date.getMinutes()).padStart(2, "0");
+      const ss = String(date.getSeconds()).padStart(2, "0");
+      return `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}`;
     }
 
     function getMode() {
@@ -90,34 +174,136 @@
         records: "查看紀錄",
         home: "一般"
       };
-      document.getElementById("mode").textContent = modeMap[mode] || mode;
+      modeEl.textContent = modeMap[mode] || mode;
     }
 
-    function bindButtons(profile) {
-      document.getElementById("clockInBtn").onclick = () => {
-        const payload = {
-          action: "clock_in",
-          userId: profile.userId,
-          displayName: profile.displayName,
-          time: new Date().toISOString()
-        };
-        log("上班打卡資料：\n" + JSON.stringify(payload, null, 2));
-        // 之後這裡可改成 fetch('/api/clock-in', { method: 'POST', ... })
-      };
+    function setButtonsDisabled(disabled) {
+      clockInBtn.disabled = disabled;
+      clockOutBtn.disabled = disabled;
+      recordBtn.disabled = disabled;
+    }
 
-      document.getElementById("clockOutBtn").onclick = () => {
-        const payload = {
-          action: "clock_out",
-          userId: profile.userId,
-          displayName: profile.displayName,
-          time: new Date().toISOString()
-        };
-        log("下班打卡資料：\n" + JSON.stringify(payload, null, 2));
-      };
+    function getCurrentLocation() {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error("此裝置或瀏覽器不支援定位功能"));
+          return;
+        }
 
-      document.getElementById("recordBtn").onclick = () => {
-        log("之後這裡可以串查看本期紀錄 API");
-      };
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const data = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy
+            };
+
+            locationTextEl.textContent =
+              `${data.latitude.toFixed(6)}, ${data.longitude.toFixed(6)}（±${Math.round(data.accuracy)}m）`;
+
+            resolve(data);
+          },
+          (error) => {
+            let message = "定位失敗";
+            switch (error.code) {
+              case error.PERMISSION_DENIED:
+                message = "使用者拒絕定位權限";
+                break;
+              case error.POSITION_UNAVAILABLE:
+                message = "無法取得定位資訊";
+                break;
+              case error.TIMEOUT:
+                message = "定位逾時";
+                break;
+            }
+            reject(new Error(message));
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          }
+        );
+      });
+    }
+
+    async function sendClockRequest(type) {
+      if (!currentProfile) {
+        setPanel("尚未取得 LINE 使用者資料", "error");
+        return;
+      }
+
+      try {
+        setButtonsDisabled(true);
+
+        const frontendTime = formatLocalTime(new Date());
+        frontendTimeEl.textContent = frontendTime;
+
+        setPanel("正在取得定位與送出打卡資料...");
+
+        const idToken = liff.getIDToken();
+        if (!idToken) {
+          throw new Error("取得 idToken 失敗，請重新開啟 LIFF");
+        }
+
+        const location = await getCurrentLocation();
+
+        const payload = {
+          action: type, // "clock_in" 或 "clock_out"
+          idToken: idToken,
+          lineUserId: currentProfile.userId,      // 先一起送，後端正式仍以驗 token 為準
+          displayName: currentProfile.displayName, // 先一起送，後端正式仍以驗 token 為準
+          frontendTime: frontendTime,              // 目前先顯示用，正式時間請後端自己記
+          latitude: location.latitude,
+          longitude: location.longitude,
+          accuracy: location.accuracy
+        };
+
+        // ===== 先顯示目前準備送出的內容 =====
+        setPanel(
+          `準備送出資料：\n${JSON.stringify(payload, null, 2)}`
+        );
+
+        // ===== 真正送到後端 =====
+        const response = await fetch(`${API_BASE_URL}/api/clock`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || "後端回傳失敗");
+        }
+
+        const successText =
+          `${result.message || "打卡成功"}\n\n` +
+          `姓名：${result.displayName || currentProfile.displayName}\n` +
+          `動作：${result.type || type}\n` +
+          `時間：${result.time || frontendTime}\n` +
+          `位置：${result.locationText || `${location.latitude}, ${location.longitude}`}`;
+
+        setPanel(successText, "success");
+      } catch (error) {
+        setPanel(`操作失敗：${error.message}`, "error");
+      } finally {
+        setButtonsDisabled(false);
+      }
+    }
+
+    function handleRecordClick() {
+      const frontendTime = formatLocalTime(new Date());
+      frontendTimeEl.textContent = frontendTime;
+      setPanel("之後這裡可以串『本期紀錄』的後端 API");
+    }
+
+    function bindButtons() {
+      clockInBtn.onclick = () => sendClockRequest("clock_in");
+      clockOutBtn.onclick = () => sendClockRequest("clock_out");
+      recordBtn.onclick = handleRecordClick;
     }
 
     async function main() {
@@ -129,26 +315,28 @@
           return;
         }
 
-        const profile = await liff.getProfile();
-        document.getElementById("name").textContent = profile.displayName;
-        document.getElementById("userId").textContent = profile.userId;
+        currentProfile = await liff.getProfile();
+
+        nameEl.textContent = currentProfile.displayName;
+        userIdEl.textContent = currentProfile.userId;
+        frontendTimeEl.textContent = formatLocalTime(new Date());
 
         const mode = getMode();
         setModeText(mode);
 
         if (mode === "in") {
-          log("目前是從『上班打卡』入口進來");
+          setPanel("目前是從『上班打卡』入口進來");
         } else if (mode === "out") {
-          log("目前是從『下班打卡』入口進來");
+          setPanel("目前是從『下班打卡』入口進來");
         } else if (mode === "records") {
-          log("目前是從『查看紀錄』入口進來");
+          setPanel("目前是從『查看紀錄』入口進來");
         } else {
-          log("LIFF 初始化成功，已讀到使用者資料");
+          setPanel("LIFF 初始化成功，已讀到使用者資料");
         }
 
-        bindButtons(profile);
-      } catch (err) {
-        log("初始化失敗：\n" + (err?.message || err));
+        bindButtons();
+      } catch (error) {
+        setPanel(`初始化失敗：${error.message}`, "error");
       }
     }
 
