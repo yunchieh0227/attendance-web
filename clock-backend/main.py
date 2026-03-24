@@ -84,7 +84,7 @@ def action_to_text(action: str) -> str:
     return action
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     return {"message": "Clock backend is running"}
 
