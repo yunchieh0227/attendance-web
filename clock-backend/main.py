@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -243,14 +243,10 @@ async def my_workdays(payload: dict, conn=Depends(get_db)):
 
 # ─── 管理員 API（需帶 Header: X-Admin-Secret） ────────────────
 
-def get_admin_secret(request: "Request"):
-    from fastapi import Request
-    return request.headers.get("X-Admin-Secret", "")
-
 # 取得所有員工
 @app.get("/api/admin/employees")
 async def admin_list_employees(
-    x_admin_secret: str = "",
+    x_admin_secret: str = Header(default=""),
     conn=Depends(get_db)
 ):
     check_admin(x_admin_secret)
@@ -264,7 +260,7 @@ async def admin_list_employees(
 async def admin_update_employee(
     employee_id: int,
     body: EmployeeUpdate,
-    x_admin_secret: str = "",
+    x_admin_secret: str = Header(default=""),
     conn=Depends(get_db)
 ):
     check_admin(x_admin_secret)
@@ -284,7 +280,7 @@ async def admin_update_employee(
 @app.get("/api/admin/workdays/{employee_id}")
 async def admin_get_workdays(
     employee_id: int,
-    x_admin_secret: str = "",
+    x_admin_secret: str = Header(default=""),
     conn=Depends(get_db)
 ):
     check_admin(x_admin_secret)
@@ -301,7 +297,7 @@ async def admin_get_workdays(
 async def admin_update_workday(
     workday_id: int,
     body: WorkDayUpdate,
-    x_admin_secret: str = "",
+    x_admin_secret: str = Header(default=""),
     conn=Depends(get_db)
 ):
     check_admin(x_admin_secret)
@@ -317,7 +313,7 @@ async def admin_update_workday(
 @app.post("/api/admin/overtime")
 async def admin_add_overtime(
     body: OvertimeCreate,
-    x_admin_secret: str = "",
+    x_admin_secret: str = Header(default=""),
     conn=Depends(get_db)
 ):
     check_admin(x_admin_secret)
@@ -340,7 +336,7 @@ async def admin_add_overtime(
 @app.post("/api/admin/loans")
 async def admin_add_loan(
     body: LoanCreate,
-    x_admin_secret: str = "",
+    x_admin_secret: str = Header(default=""),
     conn=Depends(get_db)
 ):
     check_admin(x_admin_secret)
@@ -366,7 +362,7 @@ async def admin_add_loan(
 @app.post("/api/admin/salary_periods")
 async def admin_create_salary_period(
     body: SalaryPeriodCreate,
-    x_admin_secret: str = "",
+    x_admin_secret: str = Header(default=""),
     conn=Depends(get_db)
 ):
     check_admin(x_admin_secret)
@@ -444,7 +440,7 @@ async def admin_create_salary_period(
 @app.get("/api/admin/salary_periods/{employee_id}")
 async def admin_get_salary_periods(
     employee_id: int,
-    x_admin_secret: str = "",
+    x_admin_secret: str = Header(default=""),
     conn=Depends(get_db)
 ):
     check_admin(x_admin_secret)
@@ -463,7 +459,7 @@ async def admin_get_salary_periods(
 async def admin_confirm_salary_period(
     period_id: int,
     body: SalaryPeriodConfirm,
-    x_admin_secret: str = "",
+    x_admin_secret: str = Header(default=""),
     conn=Depends(get_db)
 ):
     check_admin(x_admin_secret)
@@ -481,7 +477,7 @@ async def admin_confirm_salary_period(
 @app.get("/api/admin/loans/{employee_id}")
 async def admin_get_loans(
     employee_id: int,
-    x_admin_secret: str = "",
+    x_admin_secret: str = Header(default=""),
     conn=Depends(get_db)
 ):
     check_admin(x_admin_secret)
