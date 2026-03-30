@@ -290,7 +290,7 @@
           </div>
           <div class="sal-row"><span>日薪</span><span>$${row.daily_rate_snapshot?.toLocaleString()}</span></div>
           <div class="sal-row"><span>出工天數</span><span>${row.total_days} 天</span></div>
-          ${row.total_overtime_hours>0 ? `<div class="sal-row"><span>加班（${row.total_overtime_hours}h × $${row.overtime_rate_snapshot}）</span><span>$${(row.total_overtime_hours*row.overtime_rate_snapshot).toLocaleString()}</span></div>` : ""}
+          ${row.total_overtime_hours>0 ? `<div class="sal-row"><span>加班（${row.total_overtime_hours}h × $${row.overtime_rate_snapshot}）</span><span>$${(row.overtime_amount||0).toLocaleString()}</span></div>` : ""}
           ${row.labor_insurance>0 ? `<div class="sal-row"><span>勞保</span><span class="sal-deduct">-$${row.labor_insurance.toLocaleString()}</span></div>` : ""}
           ${row.health_insurance>0 ? `<div class="sal-row"><span>健保</span><span class="sal-deduct">-$${row.health_insurance.toLocaleString()}</span></div>` : ""}
           ${row.loan_deduction>0 ? `<div class="sal-row"><span>借支扣款</span><span class="sal-deduct">-$${row.loan_deduction.toLocaleString()}</span></div>` : ""}
