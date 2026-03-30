@@ -7,179 +7,94 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700&display=swap');
   :root {
-    --bg: #0f1117;
-    --bg2: #1a1d27;
-    --bg3: #22263a;
-    --border: #2e3348;
-    --text: #e8eaf0;
-    --muted: #7b82a0;
-    --green: #06c755;
-    --green-dim: #084d22;
-    --red: #ff4d4d;
-    --red-dim: #4d1515;
+    --bg: #0f1117; --bg2: #1a1d27; --bg3: #22263a; --border: #2e3348;
+    --text: #e8eaf0; --muted: #7b82a0;
+    --green: #06c755; --green-dim: #084d22;
+    --red: #ff4d4d; --red-dim: #4d1515;
     --amber: #f5a623;
-    --blue: #4d9fff;
-    --font: 'Noto Sans TC', sans-serif;
-    --mono: 'IBM Plex Mono', monospace;
+    --font: 'Noto Sans TC', sans-serif; --mono: 'IBM Plex Mono', monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
 
-  /* ── LOGIN ── */
-  #login-screen {
-    display: flex; align-items: center; justify-content: center;
-    min-height: 100vh; flex-direction: column; gap: 24px;
-  }
-  .login-box {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 16px; padding: 40px; width: 340px;
-  }
+  #login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .login-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 340px; }
   .login-box h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
-  .login-box p { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
-  .login-box input {
-    width: 100%; background: var(--bg3); border: 1px solid var(--border);
-    border-radius: 10px; padding: 12px 16px; color: var(--text);
-    font-family: var(--mono); font-size: 14px; margin-bottom: 14px;
-    outline: none; transition: border-color 0.2s;
-  }
+  .login-box p  { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+  .login-box input { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; color: var(--text); font-family: var(--mono); font-size: 14px; margin-bottom: 14px; outline: none; transition: border-color 0.2s; }
   .login-box input:focus { border-color: var(--green); }
-  .btn-green {
-    width: 100%; background: var(--green); color: #000; border: none;
-    border-radius: 10px; padding: 13px; font-size: 15px; font-weight: 700;
-    cursor: pointer; font-family: var(--font); transition: opacity 0.2s;
-  }
+  .btn-green { width: 100%; background: var(--green); color: #000; border: none; border-radius: 10px; padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: var(--font); transition: opacity 0.2s; }
   .btn-green:hover { opacity: 0.88; }
-  .err-msg { color: var(--red); font-size: 13px; text-align: center; min-height: 18px; }
+  .err-msg { color: var(--red); font-size: 13px; text-align: center; min-height: 18px; margin-top: 8px; }
 
-  /* ── MAIN LAYOUT ── */
   #app { display: none; min-height: 100vh; }
-  .topbar {
-    background: var(--bg2); border-bottom: 1px solid var(--border);
-    padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 16px;
-    position: sticky; top: 0; z-index: 10;
-  }
+  .topbar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 10; }
   .topbar-title { font-weight: 700; font-size: 16px; flex: 1; }
-  .topbar-tag {
-    background: var(--green-dim); color: var(--green);
-    font-size: 11px; font-family: var(--mono); padding: 3px 8px; border-radius: 6px;
-  }
-  .logout-btn {
-    background: none; border: 1px solid var(--border); color: var(--muted);
-    padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 13px;
-    font-family: var(--font); transition: all 0.2s;
-  }
+  .topbar-tag { background: var(--green-dim); color: var(--green); font-size: 11px; font-family: var(--mono); padding: 3px 8px; border-radius: 6px; }
+  .logout-btn { background: none; border: 1px solid var(--border); color: var(--muted); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-family: var(--font); transition: all 0.2s; }
   .logout-btn:hover { border-color: var(--red); color: var(--red); }
 
-  .tabs {
-    background: var(--bg2); border-bottom: 1px solid var(--border);
-    padding: 0 24px; display: flex; gap: 4px;
-  }
-  .tab {
-    padding: 14px 18px; cursor: pointer; font-size: 14px; color: var(--muted);
-    border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap;
-  }
+  .tabs { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; gap: 4px; overflow-x: auto; }
+  .tab { padding: 14px 18px; cursor: pointer; font-size: 14px; color: var(--muted); border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
   .tab:hover { color: var(--text); }
   .tab.active { color: var(--green); border-bottom-color: var(--green); }
 
-  .content { padding: 28px 24px; max-width: 960px; margin: 0 auto; }
+  .content { padding: 24px; max-width: 1080px; margin: 0 auto; }
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 11px; color: var(--muted); margin-bottom: 14px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; }
 
-  /* ── CARDS ── */
-  .card {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 14px; padding: 20px; margin-bottom: 16px;
-  }
-  .card-title { font-size: 13px; color: var(--muted); margin-bottom: 14px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
-
-  /* ── TABLE ── */
-  .tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
-  .tbl th { color: var(--muted); font-weight: 500; text-align: left; padding: 8px 12px; font-size: 12px; border-bottom: 1px solid var(--border); }
-  .tbl td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tbl th { color: var(--muted); font-weight: 500; text-align: left; padding: 8px 10px; font-size: 11px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .tbl td { padding: 10px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   .tbl tr:last-child td { border-bottom: none; }
   .tbl tr:hover td { background: var(--bg3); }
 
-  /* ── BADGES ── */
-  .badge {
-    display: inline-block; padding: 3px 10px; border-radius: 20px;
-    font-size: 12px; font-weight: 500;
-  }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
   .badge-green { background: var(--green-dim); color: var(--green); }
-  .badge-red { background: var(--red-dim); color: var(--red); }
   .badge-amber { background: #3d2e0a; color: var(--amber); }
-  .badge-gray { background: var(--bg3); color: var(--muted); }
+  .badge-gray  { background: var(--bg3); color: var(--muted); }
 
-  /* ── INPUTS / BUTTONS ── */
-  input[type=number], input[type=text], input[type=date], select, textarea {
+  input[type=number], input[type=text], input[type=date], select {
     background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
-    padding: 8px 12px; color: var(--text); font-family: var(--font); font-size: 14px;
+    padding: 7px 10px; color: var(--text); font-family: var(--font); font-size: 13px;
     outline: none; transition: border-color 0.2s;
   }
-  input[type=number]:focus, input[type=text]:focus, input[type=date]:focus,
-  select:focus, textarea:focus { border-color: var(--green); }
+  input:focus, select:focus { border-color: var(--green); }
   select option { background: var(--bg2); }
 
-  .btn {
-    border: none; border-radius: 8px; padding: 8px 16px;
-    font-size: 13px; font-weight: 600; cursor: pointer;
-    font-family: var(--font); transition: opacity 0.2s;
-  }
+  .btn { border: none; border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font); transition: opacity 0.2s; }
   .btn:hover { opacity: 0.82; }
-  .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 6px; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 6px; }
   .btn-primary { background: var(--green); color: #000; }
-  .btn-danger  { background: var(--red-dim); color: var(--red); }
   .btn-ghost   { background: var(--bg3); color: var(--text); }
 
-  /* ── FORM GRID ── */
-  .form-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 14px; }
-  .form-group { display: flex; flex-direction: column; gap: 5px; }
-  .form-label { font-size: 12px; color: var(--muted); }
+  .form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-label { font-size: 11px; color: var(--muted); }
 
-  /* ── EMPLOYEE SELECTOR ── */
-  .emp-selector { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
-  .emp-chip {
-    padding: 7px 16px; border-radius: 20px; border: 1px solid var(--border);
-    cursor: pointer; font-size: 13px; transition: all 0.2s; background: var(--bg2);
-  }
+  .emp-selector { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .emp-chip { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); cursor: pointer; font-size: 13px; transition: all 0.2s; background: var(--bg2); }
   .emp-chip:hover { border-color: var(--green); color: var(--green); }
   .emp-chip.selected { border-color: var(--green); background: var(--green-dim); color: var(--green); }
 
-  .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 32px 0; }
-  .loading { color: var(--muted); font-size: 13px; padding: 20px 0; text-align: center; }
-
-  .toast {
-    position: fixed; bottom: 24px; right: 24px;
-    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
-    padding: 12px 20px; font-size: 14px; z-index: 100;
-    transform: translateY(80px); opacity: 0; transition: all 0.3s;
-  }
-  .toast.show { transform: translateY(0); opacity: 1; }
-  .toast.success { border-color: var(--green); color: var(--green); }
-  .toast.error   { border-color: var(--red);   color: var(--red);   }
-
-  .section-sep { height: 1px; background: var(--border); margin: 24px 0; }
-
-  /* day value buttons */
-  .day-btn-group { display: flex; gap: 4px; }
-  .day-btn {
-    padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border);
-    background: none; color: var(--muted); cursor: pointer; font-size: 12px;
-    font-family: var(--font); transition: all 0.15s;
-  }
+  .day-btn-group { display: flex; gap: 3px; }
+  .day-btn { padding: 4px 9px; border-radius: 6px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; font-size: 11px; font-family: var(--font); transition: all 0.15s; }
   .day-btn:hover { border-color: var(--green); color: var(--green); }
   .day-btn.active-full { background: var(--green-dim); border-color: var(--green); color: var(--green); }
   .day-btn.active-half { background: #2a3d1a; border-color: #8bcc5a; color: #8bcc5a; }
   .day-btn.active-none { background: var(--red-dim); border-color: var(--red); color: var(--red); }
 
-  @media(max-width:600px) {
-    .content { padding: 16px; }
-    .tabs { overflow-x: auto; }
-    .form-row { flex-direction: column; }
-    .form-row input, .form-row select { width: 100%; }
-  }
+  .empty   { color: var(--muted); font-size: 14px; text-align: center; padding: 32px 0; }
+  .loading { color: var(--muted); font-size: 13px; padding: 20px 0; text-align: center; }
+
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 20px; font-size: 14px; z-index: 100; transform: translateY(80px); opacity: 0; transition: all 0.3s; pointer-events: none; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--green); color: var(--green); }
+  .toast.error   { border-color: var(--red);   color: var(--red);   }
 </style>
 </head>
 <body>
 
-<!-- ── LOGIN ── -->
 <div id="login-screen">
   <div class="login-box">
     <h1>🔐 後台管理系統</h1>
@@ -190,150 +105,88 @@
   </div>
 </div>
 
-<!-- ── APP ── -->
 <div id="app">
   <div class="topbar">
     <span class="topbar-title">打卡系統後台</span>
-    <span class="topbar-tag" id="topbar-secret"></span>
+    <span class="topbar-tag">已登入</span>
     <button class="logout-btn" onclick="doLogout()">登出</button>
   </div>
   <div class="tabs">
     <div class="tab active" onclick="switchTab('employees')">員工管理</div>
-    <div class="tab" onclick="switchTab('workdays')">出工日確認</div>
-    <div class="tab" onclick="switchTab('overtime')">加班紀錄</div>
-    <div class="tab" onclick="switchTab('loans')">借支管理</div>
-    <div class="tab" onclick="switchTab('salary')">薪資結算</div>
+    <div class="tab"        onclick="switchTab('workdays')">出工日確認</div>
+    <div class="tab"        onclick="switchTab('loans')">借支管理</div>
+    <div class="tab"        onclick="switchTab('salary')">薪資結算</div>
   </div>
   <div class="content">
 
-    <!-- ── 員工管理 ── -->
+    <!-- 員工管理 -->
     <div id="tab-employees">
       <div class="card">
-        <div class="card-title">員工列表</div>
+        <div class="card-title">員工列表（修改後按儲存）</div>
         <div id="emp-list"><div class="loading">載入中...</div></div>
       </div>
     </div>
 
-    <!-- ── 出工日確認 ── -->
+    <!-- 出工日 -->
     <div id="tab-workdays" style="display:none">
       <div class="card">
         <div class="card-title">選擇員工</div>
         <div class="emp-selector" id="wd-emp-chips"></div>
       </div>
       <div class="card" id="wd-card" style="display:none">
-        <div class="card-title">出工日列表（點按鈕確認天數）</div>
+        <div class="card-title">
+          出工日確認
+          <span style="color:var(--muted);font-size:10px;margin-left:8px">點天數確認 ／ 加班欄填時數後按 ✓ 儲存</span>
+        </div>
         <div id="wd-list"></div>
       </div>
     </div>
 
-    <!-- ── 加班 ── -->
-    <div id="tab-overtime" style="display:none">
-      <div class="card">
-        <div class="card-title">新增加班紀錄</div>
-        <div class="form-row">
-          <div class="form-group">
-            <span class="form-label">員工</span>
-            <select id="ot-emp" style="width:160px"></select>
-          </div>
-          <div class="form-group">
-            <span class="form-label">日期</span>
-            <input type="date" id="ot-date"/>
-          </div>
-          <div class="form-group">
-            <span class="form-label">加班時數</span>
-            <input type="number" id="ot-hours" step="0.5" min="0.5" style="width:100px" placeholder="0"/>
-          </div>
-          <div class="form-group">
-            <span class="form-label">備註</span>
-            <input type="text" id="ot-note" style="width:160px" placeholder="可空白"/>
-          </div>
-          <button class="btn btn-primary" onclick="addOvertime()">新增</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── 借支 ── -->
+    <!-- 借支 -->
     <div id="tab-loans" style="display:none">
       <div class="card">
         <div class="card-title">新增借支</div>
         <div class="form-row">
-          <div class="form-group">
-            <span class="form-label">員工</span>
-            <select id="loan-emp" style="width:160px"></select>
-          </div>
-          <div class="form-group">
-            <span class="form-label">借支金額</span>
-            <input type="number" id="loan-amount" style="width:120px" placeholder="0"/>
-          </div>
-          <div class="form-group">
-            <span class="form-label">日期</span>
-            <input type="date" id="loan-date"/>
-          </div>
-          <div class="form-group">
-            <span class="form-label">備註</span>
-            <input type="text" id="loan-note" style="width:160px" placeholder="可空白"/>
-          </div>
-          <button class="btn btn-primary" onclick="addLoan()">新增</button>
+          <div class="form-group"><span class="form-label">員工</span><select id="loan-emp" style="width:150px"></select></div>
+          <div class="form-group"><span class="form-label">借支金額</span><input type="number" id="loan-amount" style="width:130px" placeholder="0"/></div>
+          <div class="form-group"><span class="form-label">備註</span><input type="text" id="loan-note" style="width:180px" placeholder="可空白"/></div>
+          <button class="btn btn-primary" onclick="addLoan()">新增借支</button>
         </div>
       </div>
       <div class="card">
         <div class="card-title">借支紀錄查詢</div>
         <div class="form-row">
-          <select id="loan-query-emp" style="width:200px"></select>
-          <button class="btn btn-ghost" onclick="queryLoans()">查詢</button>
+          <select id="loan-query-emp" style="width:160px"></select>
+          <button class="btn btn-ghost" onclick="queryLoans()">查個人借支</button>
+          <button class="btn btn-ghost" onclick="queryAllLoans()">全體借支紀錄</button>
         </div>
         <div id="loan-list"></div>
       </div>
     </div>
 
-    <!-- ── 薪資結算 ── -->
+    <!-- 薪資結算 -->
     <div id="tab-salary" style="display:none">
       <div class="card">
         <div class="card-title">產生薪資結算單</div>
         <div class="form-row">
-          <div class="form-group">
-            <span class="form-label">員工</span>
-            <select id="sal-emp" style="width:160px"></select>
-          </div>
-          <div class="form-group">
-            <span class="form-label">期別標籤</span>
-            <input type="text" id="sal-label" style="width:120px" placeholder="2025-03"/>
-          </div>
-          <div class="form-group">
-            <span class="form-label">開始日</span>
-            <input type="date" id="sal-start"/>
-          </div>
-          <div class="form-group">
-            <span class="form-label">結束日</span>
-            <input type="date" id="sal-end"/>
-          </div>
-          <div class="form-group">
-            <span class="form-label">結算日</span>
-            <input type="date" id="sal-settle"/>
-          </div>
+          <div class="form-group"><span class="form-label">員工</span><select id="sal-emp" style="width:150px"></select></div>
+          <div class="form-group"><span class="form-label">期別</span><input type="text" id="sal-label" style="width:100px" placeholder="2025-03"/></div>
+          <div class="form-group"><span class="form-label">開始日</span><input type="date" id="sal-start"/></div>
+          <div class="form-group"><span class="form-label">結束日</span><input type="date" id="sal-end"/></div>
+          <div class="form-group"><span class="form-label">結算日</span><input type="date" id="sal-settle"/></div>
         </div>
         <div class="form-row">
-          <div class="form-group">
-            <span class="form-label">借支扣款</span>
-            <input type="number" id="sal-loan-ded" style="width:120px" value="0"/>
-          </div>
-          <div class="form-group">
-            <span class="form-label">開銷</span>
-            <input type="number" id="sal-expenses" style="width:120px" value="0"/>
-          </div>
-          <div class="form-group">
-            <span class="form-label">備註</span>
-            <input type="text" id="sal-note" style="width:200px" placeholder="可空白"/>
-          </div>
+          <div class="form-group"><span class="form-label">借支扣款</span><input type="number" id="sal-loan-ded" style="width:110px" value="0"/></div>
+          <div class="form-group"><span class="form-label">開銷</span><input type="number" id="sal-expenses" style="width:110px" value="0"/></div>
+          <div class="form-group"><span class="form-label">備註</span><input type="text" id="sal-note" style="width:200px" placeholder="可空白"/></div>
           <button class="btn btn-primary" onclick="createSalaryPeriod()">產生結算單</button>
         </div>
-        <div id="sal-result" style="margin-top:12px;font-size:14px;color:var(--muted)"></div>
+        <div id="sal-result" style="font-size:14px;color:var(--muted)"></div>
       </div>
-
       <div class="card">
         <div class="card-title">結算單查詢</div>
         <div class="form-row">
-          <select id="sal-query-emp" style="width:200px"></select>
+          <select id="sal-query-emp" style="width:180px"></select>
           <button class="btn btn-ghost" onclick="querySalary()">查詢</button>
         </div>
         <div id="sal-list"></div>
@@ -342,7 +195,6 @@
 
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
 
 <script>
@@ -350,17 +202,15 @@ const API = "https://attendance-backend-g8k9.onrender.com";
 let SECRET = "";
 let employees = [];
 
-// ── AUTH ──
+// ── Auth ──
 function doLogin() {
   const s = document.getElementById("secret-input").value.trim();
   if (!s) return;
   SECRET = s;
-  document.getElementById("login-err").textContent = "";
   fetchEmployees().then(ok => {
     if (ok) {
       document.getElementById("login-screen").style.display = "none";
       document.getElementById("app").style.display = "block";
-      document.getElementById("topbar-secret").textContent = "已登入";
     } else {
       document.getElementById("login-err").textContent = "密碼錯誤或連線失敗";
       SECRET = "";
@@ -368,32 +218,26 @@ function doLogin() {
   });
 }
 function doLogout() {
-  SECRET = "";
+  SECRET = ""; employees = [];
   document.getElementById("login-screen").style.display = "flex";
   document.getElementById("app").style.display = "none";
   document.getElementById("secret-input").value = "";
 }
 
-// ── TABS ──
+// ── Tabs ──
+const TAB_NAMES = ["employees","workdays","loans","salary"];
 function switchTab(name) {
-  ["employees","workdays","overtime","loans","salary"].forEach(t => {
-    document.getElementById("tab-"+t).style.display = t===name?"block":"none";
-  });
-  document.querySelectorAll(".tab").forEach((el,i) => {
-    el.classList.toggle("active", ["employees","workdays","overtime","loans","salary"][i]===name);
-  });
+  TAB_NAMES.forEach(t => document.getElementById("tab-"+t).style.display = t===name?"block":"none");
+  document.querySelectorAll(".tab").forEach((el,i) => el.classList.toggle("active", TAB_NAMES[i]===name));
   if (name==="workdays") buildEmpChips("wd-emp-chips", loadWorkdays);
-  if (name==="overtime") buildEmpSelect("ot-emp");
   if (name==="loans")    { buildEmpSelect("loan-emp"); buildEmpSelect("loan-query-emp"); }
   if (name==="salary")   { buildEmpSelect("sal-emp"); buildEmpSelect("sal-query-emp"); }
 }
 
-// ── API helpers ──
+// ── API helper ──
 async function api(method, path, body) {
-  const opts = {
-    method, headers: {"Content-Type":"application/json","X-Admin-Secret": SECRET}
-  };
-  if (body) opts.body = JSON.stringify(body);
+  const opts = { method, headers: {"Content-Type":"application/json","X-Admin-Secret":SECRET} };
+  if (body !== undefined) opts.body = JSON.stringify(body);
   const r = await fetch(API+path, opts);
   return r.json();
 }
@@ -401,10 +245,11 @@ async function api(method, path, body) {
 function toast(msg, type="success") {
   const el = document.getElementById("toast");
   el.textContent = msg; el.className = "toast show "+type;
-  setTimeout(()=>el.classList.remove("show"), 3000);
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>el.classList.remove("show"), 3000);
 }
 
-// ── EMPLOYEES ──
+// ── 員工管理 ──
 async function fetchEmployees() {
   try {
     const d = await api("GET", "/api/admin/employees");
@@ -418,81 +263,104 @@ async function fetchEmployees() {
 function renderEmpTable() {
   const el = document.getElementById("emp-list");
   if (!employees.length) { el.innerHTML='<div class="empty">尚無員工</div>'; return; }
-  el.innerHTML = `<table class="tbl">
+  el.innerHTML = `<div style="overflow-x:auto"><table class="tbl">
     <tr>
       <th>ID</th><th>姓名</th><th>日薪</th><th>加班費/hr</th>
-      <th>勞保</th><th>健保</th><th>狀態</th><th>操作</th>
+      <th>勞保</th><th>健保</th><th>稅金</th><th>仲介費</th><th>狀態</th><th>操作</th>
     </tr>
     ${employees.map(e=>`<tr>
-      <td style="font-family:var(--mono);color:var(--muted)">${e.id}</td>
+      <td style="font-family:var(--mono);color:var(--muted);font-size:11px">${e.id}</td>
       <td style="font-weight:600">${e.display_name}</td>
-      <td><input type="number" value="${e.daily_rate}" id="dr-${e.id}" style="width:90px"/></td>
-      <td><input type="number" value="${e.overtime_rate}" id="or-${e.id}" style="width:80px"/></td>
-      <td><input type="number" value="${e.labor_insurance}" id="li-${e.id}" style="width:80px"/></td>
-      <td><input type="number" value="${e.health_insurance}" id="hi-${e.id}" style="width:80px"/></td>
+      <td><input type="number" value="${e.daily_rate}"        id="dr-${e.id}" style="width:80px"/></td>
+      <td><input type="number" value="${e.overtime_rate}"     id="or-${e.id}" style="width:70px"/></td>
+      <td><input type="number" value="${e.labor_insurance}"   id="li-${e.id}" style="width:70px"/></td>
+      <td><input type="number" value="${e.health_insurance}"  id="hi-${e.id}" style="width:70px"/></td>
+      <td><input type="number" value="${e.tax||0}"            id="tx-${e.id}" style="width:70px"/></td>
+      <td><input type="number" value="${e.agency_fee||0}"     id="af-${e.id}" style="width:70px"/></td>
       <td><span class="badge ${e.is_active?'badge-green':'badge-gray'}">${e.is_active?'在職':'停用'}</span></td>
       <td><button class="btn btn-primary btn-sm" onclick="saveEmp(${e.id})">儲存</button></td>
     </tr>`).join("")}
-  </table>`;
+  </table></div>`;
 }
 
 async function saveEmp(id) {
-  const body = {
-    daily_rate: +document.getElementById("dr-"+id).value,
-    overtime_rate: +document.getElementById("or-"+id).value,
-    labor_insurance: +document.getElementById("li-"+id).value,
-    health_insurance: +document.getElementById("hi-"+id).value,
-  };
-  await api("PATCH", `/api/admin/employees/${id}`, body);
+  const g = s => +document.getElementById(s+"-"+id).value;
+  await api("PATCH", `/api/admin/employees/${id}`, {
+    daily_rate: g("dr"), overtime_rate: g("or"), labor_insurance: g("li"),
+    health_insurance: g("hi"), tax: g("tx"), agency_fee: g("af"),
+  });
   toast("✓ 員工設定已儲存");
   await fetchEmployees();
 }
 
-// ── WORKDAYS ──
-function buildEmpChips(containerId, onClick) {
-  const el = document.getElementById(containerId);
-  el.innerHTML = employees.map(e=>
-    `<div class="emp-chip" onclick="selectEmpChip(this,${e.id},'${containerId}',${onClick.name})">${e.display_name}</div>`
+// ── 出工日 ──
+function buildEmpChips(containerId, fn) {
+  document.getElementById(containerId).innerHTML = employees.map(e=>
+    `<div class="emp-chip" onclick="selectChip(this,'${containerId}',${e.id},${fn.name})">${e.display_name}</div>`
   ).join("");
 }
-function selectEmpChip(el, empId, containerId, fn) {
-  document.querySelectorAll(`#${containerId} .emp-chip`).forEach(c=>c.classList.remove("selected"));
+function selectChip(el, cid, empId, fn) {
+  document.querySelectorAll(`#${cid} .emp-chip`).forEach(c=>c.classList.remove("selected"));
   el.classList.add("selected");
   fn(empId);
 }
+
+// 加班時數快取 (workdayId -> hours)，從 overtime_records 撈
+let otCache = {};
+
 async function loadWorkdays(empId) {
   document.getElementById("wd-card").style.display = "block";
   document.getElementById("wd-list").innerHTML = '<div class="loading">載入中...</div>';
-  const d = await api("GET", `/api/admin/workdays/${empId}`);
-  const rows = d.workdays || [];
-  if (!rows.length) { document.getElementById("wd-list").innerHTML='<div class="empty">尚無出工日紀錄</div>'; return; }
 
-  document.getElementById("wd-list").innerHTML = `<table class="tbl">
-    <tr><th>日期</th><th>上班</th><th>下班</th><th>天數確認</th><th>備註</th></tr>
-    ${rows.map(r=>{
-      const cin = r.clock_in_time ? new Date(r.clock_in_time).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}) : "—";
+  const [wdData, otData] = await Promise.all([
+    api("GET", `/api/admin/workdays/${empId}`),
+    api("GET", `/api/admin/overtime/${empId}`)
+  ]);
+
+  const rows = wdData.workdays || [];
+  // 建 date→hours map
+  const otByDate = {};
+  (otData.records || []).forEach(r => { otByDate[r.work_date] = r.hours; });
+
+  if (!rows.length) {
+    document.getElementById("wd-list").innerHTML = '<div class="empty">尚無出工日紀錄</div>';
+    return;
+  }
+
+  document.getElementById("wd-list").innerHTML = `<div style="overflow-x:auto"><table class="tbl">
+    <tr><th>日期</th><th>上班</th><th>下班</th><th>天數確認</th><th>加班(h)</th><th>備註</th></tr>
+    ${rows.map(r => {
+      const cin  = r.clock_in_time  ? new Date(r.clock_in_time).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}) : "—";
       const cout = r.clock_out_time ? new Date(r.clock_out_time).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}) : "—";
       const dv = r.day_value;
-      return `<tr>
-        <td style="font-family:var(--mono)">${r.work_date}</td>
-        <td>${cin}</td><td>${cout}</td>
+      const ot = otByDate[r.work_date] || 0;
+      return `<tr id="wr-${r.id}">
+        <td style="font-family:var(--mono);font-size:12px">${r.work_date}</td>
+        <td>${cin}</td>
+        <td>${cout}</td>
         <td>
           <div class="day-btn-group">
-            <button class="day-btn ${dv==1?'active-full':''}" onclick="setDayVal(${r.id},1.0,this)">1天</button>
-            <button class="day-btn ${dv==0.5?'active-half':''}" onclick="setDayVal(${r.id},0.5,this)">半天</button>
-            <button class="day-btn ${dv===null||dv===0?'active-none':''}" onclick="setDayVal(${r.id},null,this)">不算</button>
+            <button class="day-btn ${dv==1?'active-full':''}"    onclick="setDayVal(${r.id},1.0,this)">1天</button>
+            <button class="day-btn ${dv==0.5?'active-half':''}"  onclick="setDayVal(${r.id},0.5,this)">半天</button>
+            <button class="day-btn ${dv==null||dv==0?'active-none':''}" onclick="setDayVal(${r.id},null,this)">不算</button>
           </div>
         </td>
-        <td><input type="text" value="${r.note||''}" id="note-${r.id}" style="width:120px" placeholder="備註"/></td>
+        <td>
+          <div style="display:flex;gap:4px;align-items:center">
+            <input type="number" id="ot-${r.id}" value="${ot}" step="0.5" min="0" style="width:58px;padding:4px 6px;font-size:12px"/>
+            <button class="btn btn-ghost btn-sm" onclick="saveOt(${r.id})">✓</button>
+          </div>
+        </td>
+        <td><input type="text" id="note-${r.id}" value="${r.note||''}" style="width:90px;font-size:12px" placeholder="備註"/></td>
       </tr>`;
     }).join("")}
-  </table>`;
+  </table></div>`;
 }
+
 async function setDayVal(wdId, val, btn) {
-  const row = btn.closest("tr");
+  const row = document.getElementById("wr-"+wdId);
   const note = row.querySelector('input[type=text]')?.value || null;
   await api("PATCH", `/api/admin/workdays/${wdId}`, {day_value: val, note});
-  // update active state
   row.querySelectorAll(".day-btn").forEach(b=>b.classList.remove("active-full","active-half","active-none"));
   if (val===1.0) btn.classList.add("active-full");
   else if (val===0.5) btn.classList.add("active-half");
@@ -500,109 +368,114 @@ async function setDayVal(wdId, val, btn) {
   toast("✓ 出工日已更新");
 }
 
-// ── OVERTIME ──
+async function saveOt(wdId) {
+  const hours = parseFloat(document.getElementById("ot-"+wdId).value) || 0;
+  await api("PATCH", `/api/admin/workdays/${wdId}`, {overtime_hours: hours});
+  toast(hours > 0 ? `✓ 加班 ${hours}h 已儲存` : "✓ 加班已清除");
+}
+
+// ── 借支 ──
 function buildEmpSelect(selId) {
   const el = document.getElementById(selId);
   if (!el) return;
   el.innerHTML = employees.map(e=>`<option value="${e.id}">${e.display_name}</option>`).join("");
 }
-async function addOvertime() {
-  const body = {
-    employee_id: +document.getElementById("ot-emp").value,
-    work_date: document.getElementById("ot-date").value,
-    hours: +document.getElementById("ot-hours").value,
-    note: document.getElementById("ot-note").value || null,
-  };
-  if (!body.work_date || !body.hours) { toast("請填日期與時數","error"); return; }
-  await api("POST", "/api/admin/overtime", body);
-  toast("✓ 加班紀錄已新增");
-}
 
-// ── LOANS ──
 async function addLoan() {
   const body = {
     employee_id: +document.getElementById("loan-emp").value,
     amount: +document.getElementById("loan-amount").value,
-    loan_date: document.getElementById("loan-date").value || null,
     note: document.getElementById("loan-note").value || null,
   };
   if (!body.amount) { toast("請填借支金額","error"); return; }
   const d = await api("POST", "/api/admin/loans", body);
-  toast(`✓ 借支已新增，目前餘額 $${d.remaining_balance}`);
+  toast(`✓ 已新增，累計借支 $${d.remaining_balance?.toLocaleString()}`);
   document.getElementById("loan-amount").value = "";
+  document.getElementById("loan-note").value = "";
 }
-async function queryLoans() {
-  const empId = document.getElementById("loan-query-emp").value;
-  const d = await api("GET", `/api/admin/loans/${empId}`);
-  const rows = d.loans || [];
-  const el = document.getElementById("loan-list");
-  if (!rows.length) { el.innerHTML='<div class="empty">尚無借支紀錄</div>'; return; }
-  el.innerHTML = `<table class="tbl">
-    <tr><th>日期</th><th>本次借支</th><th>累計餘額</th><th>備註</th></tr>
+
+function renderLoanTable(rows, showName=false) {
+  if (!rows.length) return '<div class="empty">尚無借支紀錄</div>';
+  return `<table class="tbl">
+    <tr>${showName?'<th>員工</th>':''}<th>日期</th><th>本次借支</th><th>累計餘額</th><th>備註</th></tr>
     ${rows.map(r=>`<tr>
-      <td style="font-family:var(--mono)">${r.loan_date}</td>
+      ${showName?`<td style="font-weight:600">${r.display_name}</td>`:''}
+      <td style="font-family:var(--mono);font-size:12px">${r.loan_date}</td>
       <td style="color:var(--amber)">+$${r.amount.toLocaleString()}</td>
-      <td style="color:var(--red);font-weight:600">$${r.remaining_balance.toLocaleString()}</td>
+      <td style="color:var(--red);font-weight:700">$${r.remaining_balance.toLocaleString()}</td>
       <td style="color:var(--muted)">${r.note||"—"}</td>
     </tr>`).join("")}
   </table>`;
 }
 
-// ── SALARY ──
+async function queryLoans() {
+  const empId = document.getElementById("loan-query-emp").value;
+  const d = await api("GET", `/api/admin/loans/${empId}`);
+  document.getElementById("loan-list").innerHTML = renderLoanTable(d.loans||[]);
+}
+
+async function queryAllLoans() {
+  const d = await api("GET", "/api/admin/loans");
+  document.getElementById("loan-list").innerHTML = renderLoanTable(d.loans||[], true);
+}
+
+// ── 薪資 ──
 async function createSalaryPeriod() {
   const body = {
-    employee_id: +document.getElementById("sal-emp").value,
-    period_label: document.getElementById("sal-label").value,
-    period_start: document.getElementById("sal-start").value,
-    period_end:   document.getElementById("sal-end").value,
+    employee_id:    +document.getElementById("sal-emp").value,
+    period_label:   document.getElementById("sal-label").value,
+    period_start:   document.getElementById("sal-start").value,
+    period_end:     document.getElementById("sal-end").value,
     settlement_date: document.getElementById("sal-settle").value || null,
-    loan_deduction: +document.getElementById("sal-loan-ded").value||0,
-    expenses: +document.getElementById("sal-expenses").value||0,
-    note: document.getElementById("sal-note").value || null,
+    loan_deduction: +document.getElementById("sal-loan-ded").value || 0,
+    expenses:       +document.getElementById("sal-expenses").value || 0,
+    note:           document.getElementById("sal-note").value || null,
   };
-  if (!body.period_label||!body.period_start||!body.period_end) { toast("請填必要欄位","error"); return; }
+  if (!body.period_label || !body.period_start || !body.period_end) {
+    toast("請填期別、開始日、結束日","error"); return;
+  }
   const d = await api("POST", "/api/admin/salary_periods", body);
   if (d.period_id) {
     document.getElementById("sal-result").innerHTML =
-      `<span style="color:var(--green)">✓ 結算單已產生</span>　
-       天數：<b>${d.total_days}</b>　應領：<b>$${d.gross?.toLocaleString()}</b>　
-       <span style="color:var(--green);font-weight:700">實領：$${d.net?.toLocaleString()}</span>`;
+      `<span style="color:var(--green)">✓ 結算單已產生</span>　天數：<b>${d.total_days}</b>　應領：<b>$${d.gross?.toLocaleString()}</b>　<span style="color:var(--green);font-weight:700">實領：$${d.net?.toLocaleString()}</span>`;
     toast("✓ 薪資結算單已產生");
   } else {
-    toast("產生失敗："+JSON.stringify(d), "error");
+    toast("產生失敗：" + (d.detail||JSON.stringify(d)), "error");
   }
 }
+
 async function querySalary() {
   const empId = document.getElementById("sal-query-emp").value;
   const d = await api("GET", `/api/admin/salary_periods/${empId}`);
   const rows = d.periods || [];
   const el = document.getElementById("sal-list");
   if (!rows.length) { el.innerHTML='<div class="empty">尚無結算單</div>'; return; }
-  el.innerHTML = `<table class="tbl">
-    <tr><th>期別</th><th>結算日</th><th>天數</th><th>加班h</th><th>勞保</th><th>健保</th><th>借支扣</th><th>開銷</th><th>應領</th><th>實領</th><th>狀態</th><th>確認</th></tr>
+  el.innerHTML = `<div style="overflow-x:auto"><table class="tbl">
+    <tr><th>期別</th><th>結算日</th><th>天數</th><th>加班h</th><th>勞保</th><th>健保</th><th>稅金</th><th>仲介費</th><th>借支扣</th><th>開銷</th><th>實領</th><th>狀態</th><th>操作</th></tr>
     ${rows.map(r=>`<tr>
-      <td style="font-family:var(--mono)">${r.period_label}</td>
-      <td>${r.settlement_date||"—"}</td>
+      <td style="font-family:var(--mono);font-size:12px">${r.period_label}</td>
+      <td style="font-size:12px">${r.settlement_date||"—"}</td>
       <td>${r.total_days}</td>
       <td>${r.total_overtime_hours}</td>
       <td>${r.labor_insurance.toLocaleString()}</td>
       <td>${r.health_insurance.toLocaleString()}</td>
+      <td>${(r.tax||0).toLocaleString()}</td>
+      <td>${(r.agency_fee||0).toLocaleString()}</td>
       <td style="color:var(--red)">${r.loan_deduction.toLocaleString()}</td>
       <td>${r.expenses.toLocaleString()}</td>
-      <td>${r.gross_salary.toLocaleString()}</td>
       <td style="color:var(--green);font-weight:700">${r.net_salary.toLocaleString()}</td>
       <td><span class="badge ${r.status==='confirmed'?'badge-green':'badge-amber'}">${r.status==='confirmed'?'已確認':'草稿'}</span></td>
-      <td>
-        ${r.status==='draft'
-          ? `<button class="btn btn-primary btn-sm" onclick="confirmSal(${r.id},'confirmed')">確認發出</button>`
-          : `<button class="btn btn-ghost btn-sm" onclick="confirmSal(${r.id},'draft')">退回草稿</button>`}
+      <td>${r.status==='draft'
+        ?`<button class="btn btn-primary btn-sm" onclick="confirmSal(${r.id},'confirmed')">確認發出</button>`
+        :`<button class="btn btn-ghost btn-sm" onclick="confirmSal(${r.id},'draft')">退回草稿</button>`}
       </td>
     </tr>`).join("")}
-  </table>`;
+  </table></div>`;
 }
+
 async function confirmSal(id, status) {
   await api("PATCH", `/api/admin/salary_periods/${id}/status`, {status});
-  toast(status==="confirmed"?"✓ 已確認，員工可查看":"已退回草稿");
+  toast(status==="confirmed" ? "✓ 已確認，員工可查看" : "已退回草稿");
   querySalary();
 }
 </script>

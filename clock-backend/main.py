@@ -60,10 +60,13 @@ class EmployeeUpdate(BaseModel):
     overtime_rate: Optional[int] = None
     labor_insurance: Optional[int] = None
     health_insurance: Optional[int] = None
+    tax: Optional[int] = None
+    agency_fee: Optional[int] = None
     is_active: Optional[bool] = None
 
 class WorkDayUpdate(BaseModel):
     day_value: Optional[float] = None   # 1.0 / 0.5 / None(取消)
+    overtime_hours: Optional[float] = None  # 當天加班時數
     note: Optional[str] = None
 
 class OvertimeCreate(BaseModel):
@@ -75,7 +78,6 @@ class OvertimeCreate(BaseModel):
 class LoanCreate(BaseModel):
     employee_id: int
     amount: int
-    loan_date: Optional[date] = None
     note: Optional[str] = None
 
 class SalaryPeriodCreate(BaseModel):
@@ -292,7 +294,7 @@ async def admin_get_workdays(
     )
     return {"workdays": [dict(r) for r in rows]}
 
-# 管理員確認出工日（填 1.0 / 0.5）
+# 管理員確認出工日（填 1.0 / 0.5）並可同時填加班時數
 @app.patch("/api/admin/workdays/{workday_id}")
 async def admin_update_workday(
     workday_id: int,
@@ -301,12 +303,37 @@ async def admin_update_workday(
     conn=Depends(get_db)
 ):
     check_admin(x_admin_secret)
+
     await conn.execute(
         """UPDATE work_days
-           SET day_value = $1, note = COALESCE($2, note)
+           SET day_value = COALESCE($1, day_value),
+               note = COALESCE($2, note)
            WHERE id = $3""",
         body.day_value, body.note, workday_id
     )
+
+    # 若有帶加班時數，寫入 overtime_records（同一天先刪再插）
+    if body.overtime_hours is not None:
+        wd = await conn.fetchrow(
+            "SELECT employee_id, work_date FROM work_days WHERE id = $1", workday_id
+        )
+        if wd:
+            emp = await conn.fetchrow(
+                "SELECT overtime_rate FROM employees WHERE id = $1", wd["employee_id"]
+            )
+            await conn.execute(
+                "DELETE FROM overtime_records WHERE employee_id=$1 AND work_date=$2",
+                wd["employee_id"], wd["work_date"]
+            )
+            if body.overtime_hours > 0:
+                await conn.execute(
+                    """INSERT INTO overtime_records
+                       (employee_id, work_date, hours, rate_snapshot)
+                       VALUES ($1,$2,$3,$4)""",
+                    wd["employee_id"], wd["work_date"],
+                    body.overtime_hours, emp["overtime_rate"]
+                )
+
     return {"message": "出工日已更新"}
 
 # 新增加班紀錄
@@ -354,7 +381,7 @@ async def admin_add_loan(
         """INSERT INTO loans (employee_id, amount, loan_date, remaining_balance, note)
            VALUES ($1,$2,$3,$4,$5)""",
         body.employee_id, body.amount,
-        body.loan_date or date.today(), new_balance, body.note
+        date.today(), new_balance, body.note
     )
     return {"message": "借支已新增", "remaining_balance": new_balance}
 
@@ -396,9 +423,10 @@ async def admin_create_salary_period(
     total_ot_hours = float(ot_row["total"])
     ot_rate        = int(ot_row["rate"])
 
-    # 計算薪資
+    # 計算薪資（含稅金、仲介費）
     gross  = int(emp["daily_rate"] * total_days + ot_rate * total_ot_hours)
     net    = gross - emp["labor_insurance"] - emp["health_insurance"] \
+             - emp.get("tax", 0) - emp.get("agency_fee", 0) \
              - body.loan_deduction - body.expenses
 
     row = await conn.fetchrow(
@@ -486,5 +514,20 @@ async def admin_get_loans(
            WHERE employee_id = $1
            ORDER BY created_at DESC""",
         employee_id
+    )
+    return {"loans": [dict(r) for r in rows]}
+
+# 全體借支紀錄
+@app.get("/api/admin/loans")
+async def admin_get_all_loans(
+    x_admin_secret: str = Header(default=""),
+    conn=Depends(get_db)
+):
+    check_admin(x_admin_secret)
+    rows = await conn.fetch(
+        """SELECT l.*, e.display_name
+           FROM loans l
+           JOIN employees e ON e.id = l.employee_id
+           ORDER BY l.created_at DESC"""
     )
     return {"loans": [dict(r) for r in rows]}
