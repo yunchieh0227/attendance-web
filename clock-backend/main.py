@@ -543,7 +543,7 @@ async def admin_summary_labels(
     )
     return {"labels": [r["period_label"] for r in rows]}
 
-@app.get("/api/admin/summary/{period_label}")
+@app.get("/api/admin/summary")
 async def admin_period_summary(
     period_label: str,
     x_admin_secret: str = Header(default=""),

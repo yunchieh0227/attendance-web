@@ -561,7 +561,7 @@ async function querySummary() {
   try {
     const label = document.getElementById("sum-label").value;
     if (!label || label==="尚無已確認期別") return;
-    const d = await api("GET", `/api/admin/summary/${encodeURIComponent(label)}`);
+    const d = await api("GET", `/api/admin/summary?period_label=${encodeURIComponent(label)}`);
     const rows = d.periods||[];
     if (!rows.length) { el.innerHTML='<div class="empty">此期別尚無已確認結算單</div>'; return; }
 
