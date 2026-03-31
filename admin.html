@@ -206,7 +206,7 @@
         <div class="form-row">
           <div class="form-group">
             <span class="form-label">選擇期別</span>
-            <select id="sum-label" style="width:160px"></select>
+            <select id="sum-label" style="width:160px" onchange="querySummary()"></select>
           </div>
           <button class="btn btn-ghost" onclick="querySummary()">查詢</button>
         </div>
@@ -550,8 +550,9 @@ async function loadSummaryLabels() {
     const d = await api("GET", "/api/admin/summary_labels");
     const sel = document.getElementById("sum-label");
     const labels = d.labels||[];
-    if (!labels.length) { sel.innerHTML='<option>尚無已確認期別</option>'; return; }
+    if (!labels.length) { sel.innerHTML='<option value="">尚無已確認期別</option>'; return; }
     sel.innerHTML = labels.map(l=>`<option value="${l}">${l}</option>`).join("");
+    querySummary();
   } catch(e) { toast(e.message || "載入期別失敗", "error"); }
 }
 
