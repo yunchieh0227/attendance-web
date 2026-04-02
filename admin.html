@@ -365,8 +365,8 @@ async function loadWorkdays(empId) {
       const dv = r.day_value; const ot = otByDate[r.work_date]||0;
       return `<tr id="wr-${r.id}">
         <td style="font-family:var(--mono);font-size:12px">${r.work_date}</td>
-        <td><input type="time" id="cin-${r.id}"  value="${cinVal}"  style="width:90px;padding:3px 6px;font-size:12px"/></td>
-        <td><input type="time" id="cout-${r.id}" value="${coutVal}" style="width:90px;padding:3px 6px;font-size:12px"/></td>
+        <td><input type="text" id="cin-${r.id}"  value="${cinVal}"  placeholder="HH:MM" maxlength="5" style="width:68px;padding:4px 6px;font-size:12px;text-align:center;font-family:var(--mono)"/></td>
+        <td><input type="text" id="cout-${r.id}" value="${coutVal}" placeholder="HH:MM" maxlength="5" style="width:68px;padding:4px 6px;font-size:12px;text-align:center;font-family:var(--mono)"/></td>
         <td><button id="ctbtn-${r.id}" class="btn btn-ghost btn-sm ot-check" onclick="saveClockTimes(${r.id})">儲存</button></td>
         <td><div class="day-btn-group">
           <button class="day-btn ${dv==1?'active-full':''}"   onclick="setDayVal(${r.id},1.0,this)">1天</button>
@@ -387,7 +387,7 @@ async function loadWorkdays(empId) {
 async function setDayVal(wdId, val, btn) {
   try {
     const row = document.getElementById("wr-"+wdId);
-    const note = row.querySelector('input[type=text]')?.value||null;
+    const note = document.getElementById("note-"+wdId)?.value||null;
     await api("PATCH", `/api/admin/workdays/${wdId}`, {day_value:val, note});
     row.querySelectorAll(".day-btn").forEach(b=>b.classList.remove("active-full","active-half","active-none"));
     if (val===1.0) btn.classList.add("active-full");
@@ -399,12 +399,15 @@ async function setDayVal(wdId, val, btn) {
 
 async function saveClockTimes(wdId) {
   try {
-    const cinVal  = document.getElementById("cin-"+wdId).value;
-    const coutVal = document.getElementById("cout-"+wdId).value;
+    const cinVal  = document.getElementById("cin-"+wdId).value.trim();
+    const coutVal = document.getElementById("cout-"+wdId).value.trim();
+    if (!cinVal && !coutVal) { toast("請輸入上班或下班時間","error"); return; }
+    const fmt = /^([01]\d|2[0-3]):[0-5]\d$/;
+    if (cinVal  && !fmt.test(cinVal))  { toast("上班時間格式錯誤，請輸入 HH:MM（如 08:30）","error"); return; }
+    if (coutVal && !fmt.test(coutVal)) { toast("下班時間格式錯誤，請輸入 HH:MM（如 17:00）","error"); return; }
     const body = {};
     if (cinVal)  body.clock_in_time  = cinVal;
     if (coutVal) body.clock_out_time = coutVal;
-    if (!cinVal && !coutVal) { toast("請輸入上班或下班時間","error"); return; }
     await api("PATCH", `/api/admin/workdays/${wdId}`, body);
     const btn = document.getElementById("ctbtn-"+wdId);
     btn.classList.add("saved");
