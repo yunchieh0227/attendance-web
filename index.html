@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>員工打卡系統</title>
+  <title>員工打卡系統 / Hệ thống chấm công</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body {
@@ -31,8 +31,11 @@
     }
     button:hover { opacity: 0.90; }
     button:disabled { opacity: 0.45; cursor: not-allowed; }
-    .in  { background: #06c755; color: white; }
-    .out { background: #1f1f1f; color: white; }
+    .clock-btns { display: flex; flex-direction: column; gap: 20px; margin: 4px 0 16px; }
+    .clock-btns button { margin: 0; }
+    .in  { background: #06c755; color: white; padding: 22px 16px; font-size: 22px; font-weight: 700; border-radius: 18px; }
+    .out { background: #1f1f1f; color: white; padding: 22px 16px; font-size: 22px; font-weight: 700; border-radius: 18px; }
+    .vi-sub { font-size: 0.6em; font-weight: 500; opacity: 0.88; display: block; margin-top: 3px; }
     .record { background: #e9edf3; color: #222; }
     .panel {
       margin-top: 20px; background: #f7f7f7; border-radius: 14px;
@@ -95,33 +98,35 @@
 </head>
 <body>
 <div class="card">
-  <h1>員工打卡系統</h1>
+  <h1>員工打卡系統<br><span style="font-size:0.55em;font-weight:600;color:#555">Hệ thống chấm công nhân viên</span></h1>
   <div class="info">
-    <div>姓名：<span id="name">讀取中...</span></div>
-    <div>LINE User ID：<span id="userId">讀取中...</span></div>
-    <div>目前時間：<span id="frontendTime">—</span></div>
-    <div>目前定位：<span id="locationText">尚未取得</span></div>
+    <div>姓名 / Họ tên：<span id="name">讀取中 / Đang tải...</span></div>
+    <div>LINE User ID：<span id="userId">讀取中 / Đang tải...</span></div>
+    <div>目前時間 / Thời gian hiện tại：<span id="frontendTime">—</span></div>
+    <div>目前定位 / Vị trí hiện tại：<span id="locationText">尚未取得 / Chưa xác định được vị trí</span></div>
   </div>
 
-  <button class="in"  id="clockInBtn">上班打卡</button>
-  <button class="out" id="clockOutBtn">下班打卡</button>
-  <button class="record" id="recordBtn">查看本期紀錄</button>
+  <div class="clock-btns">
+    <button class="in"  id="clockInBtn">上班打卡<span class="vi-sub">Chấm công vào ca</span></button>
+    <button class="out" id="clockOutBtn">下班打卡<span class="vi-sub">Chấm công ra ca</span></button>
+  </div>
+  <button class="record" id="recordBtn">查看本期紀錄 / Xem lịch sử kỳ này</button>
 
-  <div class="panel" id="resultPanel">尚未操作</div>
-  <div class="hint">正式打卡時間以後端伺服器時間為準</div>
+  <div class="panel" id="resultPanel">尚未操作 / Chưa thao tác</div>
+  <div class="hint">正式打卡時間以後端伺服器時間為準<br>Thời gian chấm công chính thức tính theo giờ máy chủ</div>
 
   <!-- 紀錄面板 -->
   <div id="records-panel">
     <div class="rec-tabs">
-      <div class="rec-tab active" onclick="switchRecTab('workdays')">出工日紀錄</div>
-      <div class="rec-tab" onclick="switchRecTab('salary')">薪資明細</div>
+      <div class="rec-tab active" onclick="switchRecTab('workdays')">出工日紀錄 / Ngày công</div>
+      <div class="rec-tab" onclick="switchRecTab('salary')">薪資明細 / Chi tiết lương</div>
     </div>
     <div id="rec-workdays" class="rec-section active">
-      <div class="loading-dots" id="wd-loading" style="color:#888;font-size:14px;padding:16px 0">載入中</div>
+      <div class="loading-dots" id="wd-loading" style="color:#888;font-size:14px;padding:16px 0">載入中 / Đang tải</div>
       <div id="wd-content"></div>
     </div>
     <div id="rec-salary" class="rec-section">
-      <div class="loading-dots" id="sal-loading" style="color:#888;font-size:14px;padding:16px 0;display:none">載入中</div>
+      <div class="loading-dots" id="sal-loading" style="color:#888;font-size:14px;padding:16px 0;display:none">載入中 / Đang tải</div>
       <div id="sal-content"></div>
     </div>
   </div>
@@ -158,7 +163,7 @@
 
   function getCurrentLocation() {
     return new Promise((res,rej) => {
-      if (!navigator.geolocation) { rej(new Error("不支援定位")); return; }
+      if (!navigator.geolocation) { rej(new Error("不支援定位 / Không hỗ trợ định vị")); return; }
       navigator.geolocation.getCurrentPosition(
         pos => {
           const {latitude,longitude,accuracy} = pos.coords;
@@ -166,8 +171,8 @@
           res({latitude,longitude,accuracy});
         },
         err => {
-          const msgs = {1:"使用者拒絕定位",2:"無法取得定位",3:"定位逾時"};
-          rej(new Error(msgs[err.code]||"定位失敗"));
+          const msgs = {1:"使用者拒絕定位 / Người dùng từ chối định vị",2:"無法取得定位 / Không thể lấy vị trí",3:"定位逾時 / Hết thời gian định vị"};
+          rej(new Error(msgs[err.code]||"定位失敗 / Lấy vị trí thất bại"));
         },
         {enableHighAccuracy:true, timeout:10000, maximumAge:0}
       );
@@ -175,12 +180,12 @@
   }
 
   async function sendClockRequest(type) {
-    if (!currentProfile) { setPanel("尚未取得 LINE 資料","error"); return; }
+    if (!currentProfile) { setPanel("尚未取得 LINE 資料 / Chưa lấy được dữ liệu LINE","error"); return; }
     try {
       setDisabled(true);
-      setPanel("正在取得定位與送出打卡...");
+      setPanel("正在取得定位與送出打卡... / Đang lấy vị trí và gửi chấm công...");
       const idToken = liff.getIDToken();
-      if (!idToken) throw new Error("取得 idToken 失敗，請重新開啟");
+      if (!idToken) throw new Error("取得 idToken 失敗，請重新開啟 / Lấy idToken thất bại, vui lòng mở lại");
       const loc = await getCurrentLocation();
       const payload = {
         action: type, idToken,
@@ -193,16 +198,17 @@
         method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)
       });
       const result = await r.json();
-      if (!r.ok) throw new Error(result.detail || "後端回傳失敗");
+      if (!r.ok) throw new Error(result.detail || "後端回傳失敗 / Máy chủ trả lỗi");
 
+      const viAction = type === "clock_in" ? "Chấm công vào ca thành công" : "Chấm công ra ca thành công";
       setPanel(
-        `${result.message}\n\n姓名：${result.displayName}\n時間：${result.time}\n位置：${result.locationText}`,
+        `${result.message} / ${viAction}\n\n姓名 / Họ tên：${result.displayName}\n時間 / Thời gian：${result.time}\n位置 / Vị trí：${result.locationText}`,
         "success"
       );
       // 重新載入出工日
       recordsLoaded.workdays = false;
     } catch(e) {
-      setPanel("操作失敗："+e.message, "error");
+      setPanel("操作失敗 / Thao tác thất bại："+e.message, "error");
     } finally {
       setDisabled(false);
     }
@@ -222,11 +228,11 @@
   async function handleRecordClick() {
     if (recordsPanel.style.display === "block") {
       recordsPanel.style.display = "none";
-      recordBtn.textContent = "查看本期紀錄";
+      recordBtn.textContent = "查看本期紀錄 / Xem lịch sử kỳ này";
       return;
     }
     recordsPanel.style.display = "block";
-    recordBtn.textContent = "收起紀錄";
+    recordBtn.textContent = "收起紀錄 / Thu gọn";
     if (!recordsLoaded.workdays) loadWorkdays();
   }
 
@@ -243,19 +249,19 @@
       const d = await r.json();
       const rows = d.records || [];
       document.getElementById("wd-loading").style.display = "none";
-      if (!rows.length) { el.innerHTML='<div class="empty-hint">尚無出工紀錄</div>'; return; }
+      if (!rows.length) { el.innerHTML='<div class="empty-hint">尚無出工紀錄 / Chưa có hồ sơ ngày công</div>'; return; }
 
       el.innerHTML = rows.map(row => {
-        const cin  = row.clock_in_time  ? new Date(row.clock_in_time).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}) : "—";
-        const cout = row.clock_out_time ? new Date(row.clock_out_time).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}) : "—";
+        const cin  = row.clock_in_time  ? (d=>{return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`})(new Date(row.clock_in_time))  : "—";
+        const cout = row.clock_out_time ? (d=>{return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`})(new Date(row.clock_out_time)) : "—";
         const dv = row.day_value;
-        const badge = dv==1   ? '<span class="wd-badge wd-full">整天</span>'
-                    : dv==0.5 ? '<span class="wd-badge wd-half">半天</span>'
-                    : '<span class="wd-badge wd-pending">待確認</span>';
+        const badge = dv==1   ? '<span class="wd-badge wd-full">整天 / Nguyên ngày</span>'
+                    : dv==0.5 ? '<span class="wd-badge wd-half">半天 / Nửa ngày</span>'
+                    : '<span class="wd-badge wd-pending">待確認 / Chờ xác nhận</span>';
         return `<div class="wd-item">
           <div>
             <div class="wd-date">${row.work_date}</div>
-            <div class="wd-times">上班 ${cin}　下班 ${cout}</div>
+            <div class="wd-times">上班 / Giờ vào ${cin}　下班 / Giờ ra ${cout}</div>
           </div>
           ${badge}
         </div>`;
@@ -263,7 +269,7 @@
       recordsLoaded.workdays = true;
     } catch(e) {
       document.getElementById("wd-loading").style.display = "none";
-      el.innerHTML = `<div class="empty-hint">載入失敗：${e.message}</div>`;
+      el.innerHTML = `<div class="empty-hint">載入失敗 / Tải thất bại：${e.message}</div>`;
     }
   }
 
@@ -280,32 +286,32 @@
       const d = await r.json();
       const rows = d.records || [];
       document.getElementById("sal-loading").style.display = "none";
-      if (!rows.length) { el.innerHTML='<div class="empty-hint">尚無已確認的薪資明細<br><small>管理員確認結算後才會顯示</small></div>'; return; }
+      if (!rows.length) { el.innerHTML='<div class="empty-hint">尚無已確認的薪資明細 / Chưa có chi tiết lương đã xác nhận<br><small>管理員確認結算後才會顯示 / Sẽ hiển thị sau khi quản lý xác nhận</small></div>'; return; }
 
       el.innerHTML = rows.map(row => `
         <div class="sal-card">
           <div class="sal-header">
             <span class="sal-period">${row.period_label}</span>
-            <span class="sal-date">結算日：${row.settlement_date||"—"}</span>
+            <span class="sal-date">結算日 / Ngày quyết toán：${row.settlement_date||"—"}</span>
           </div>
-          <div class="sal-row"><span>日薪</span><span>$${row.daily_rate_snapshot?.toLocaleString()}</span></div>
-          <div class="sal-row"><span>出工天數</span><span>${row.total_days} 天</span></div>
-          ${row.total_overtime_hours>0 ? `<div class="sal-row"><span>加班（${row.total_overtime_hours}h × $${row.overtime_rate_snapshot}）</span><span>$${(row.overtime_amount||0).toLocaleString()}</span></div>` : ""}
-          <div class="sal-row" style="border-top:1px solid #e0e0e0;margin-top:6px;padding-top:8px;font-weight:600"><span>應領小計</span><span>$${row.gross_salary?.toLocaleString()}</span></div>
-          ${row.labor_insurance>0 ? `<div class="sal-row"><span>勞保</span><span class="sal-deduct">-$${row.labor_insurance.toLocaleString()}</span></div>` : ""}
-          ${row.health_insurance>0 ? `<div class="sal-row"><span>健保</span><span class="sal-deduct">-$${row.health_insurance.toLocaleString()}</span></div>` : ""}
-          ${(row.tax_snapshot||0)>0 ? `<div class="sal-row"><span>稅金</span><span class="sal-deduct">-$${row.tax_snapshot.toLocaleString()}</span></div>` : ""}
-          ${(row.agency_fee_snapshot||0)>0 ? `<div class="sal-row"><span>仲介費</span><span class="sal-deduct">-$${row.agency_fee_snapshot.toLocaleString()}</span></div>` : ""}
-          ${row.loan_deduction>0 ? `<div class="sal-row"><span>借支扣款</span><span class="sal-deduct">-$${row.loan_deduction.toLocaleString()}</span></div>` : ""}
-          ${row.loan_deduction>0 ? `<div class="sal-row"><span>借支餘額</span><span style="color:#e53935">$${(row.loan_remaining_after||0).toLocaleString()}</span></div>` : ""}
-          ${row.note ? `<div class="sal-row"><span>備註</span><span style="color:#888">${row.note}</span></div>` : ""}
-          <div class="sal-row total"><span>實領薪資</span><span>$${row.net_salary?.toLocaleString()}</span></div>
+          <div class="sal-row"><span>日薪 / Lương ngày</span><span>$${row.daily_rate_snapshot?.toLocaleString()}</span></div>
+          <div class="sal-row"><span>出工天數 / Số ngày công</span><span>${row.total_days} 天 / ngày</span></div>
+          ${row.total_overtime_hours>0 ? `<div class="sal-row"><span>加班 / Tăng ca（${row.total_overtime_hours}h × $${row.overtime_rate_snapshot}）</span><span>$${(row.overtime_amount||0).toLocaleString()}</span></div>` : ""}
+          <div class="sal-row" style="border-top:1px solid #e0e0e0;margin-top:6px;padding-top:8px;font-weight:600"><span>應領小計 / Tổng lương gộp</span><span>$${row.gross_salary?.toLocaleString()}</span></div>
+          ${row.labor_insurance>0 ? `<div class="sal-row"><span>勞保 / BHXH</span><span class="sal-deduct">-$${row.labor_insurance.toLocaleString()}</span></div>` : ""}
+          ${row.health_insurance>0 ? `<div class="sal-row"><span>健保 / BHYT</span><span class="sal-deduct">-$${row.health_insurance.toLocaleString()}</span></div>` : ""}
+          ${(row.tax_snapshot||0)>0 ? `<div class="sal-row"><span>稅金 / Thuế</span><span class="sal-deduct">-$${row.tax_snapshot.toLocaleString()}</span></div>` : ""}
+          ${(row.agency_fee_snapshot||0)>0 ? `<div class="sal-row"><span>仲介費 / Phí môi giới</span><span class="sal-deduct">-$${row.agency_fee_snapshot.toLocaleString()}</span></div>` : ""}
+          ${row.loan_deduction>0 ? `<div class="sal-row"><span>借支扣款 / Khấu trừ tạm ứng</span><span class="sal-deduct">-$${row.loan_deduction.toLocaleString()}</span></div>` : ""}
+          ${row.loan_deduction>0 ? `<div class="sal-row"><span>借支餘額 / Số dư tạm ứng</span><span style="color:#e53935">$${(row.loan_remaining_after||0).toLocaleString()}</span></div>` : ""}
+          ${row.note ? `<div class="sal-row"><span>備註 / Ghi chú</span><span style="color:#888">${row.note}</span></div>` : ""}
+          <div class="sal-row total"><span>實領薪資 / Lương thực nhận</span><span>$${row.net_salary?.toLocaleString()}</span></div>
         </div>
       `).join("");
       recordsLoaded.salary = true;
     } catch(e) {
       document.getElementById("sal-loading").style.display = "none";
-      el.innerHTML = `<div class="empty-hint">載入失敗：${e.message}</div>`;
+      el.innerHTML = `<div class="empty-hint">載入失敗 / Tải thất bại：${e.message}</div>`;
     }
   }
 
@@ -317,12 +323,12 @@
       currentProfile = await liff.getProfile();
       nameEl.textContent   = currentProfile.displayName;
       userIdEl.textContent = currentProfile.userId;
-      setPanel("LIFF 初始化成功，已讀到使用者資料");
+      setPanel("LIFF 初始化成功，已讀到使用者資料 / Khởi tạo thành công, đã đọc dữ liệu người dùng");
       clockInBtn.onclick  = () => sendClockRequest("clock_in");
       clockOutBtn.onclick = () => sendClockRequest("clock_out");
       recordBtn.onclick   = handleRecordClick;
     } catch(e) {
-      setPanel("初始化失敗："+e.message, "error");
+      setPanel("初始化失敗 / Khởi tạo thất bại："+e.message, "error");
     }
   }
   main();

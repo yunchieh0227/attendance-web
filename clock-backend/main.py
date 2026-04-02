@@ -68,6 +68,8 @@ class WorkDayUpdate(BaseModel):
     day_value:      Optional[float] = None
     overtime_hours: Optional[float] = None
     note:           Optional[str]   = None
+    clock_in_time:  Optional[str]   = None  # "HH:MM" 24小時制
+    clock_out_time: Optional[str]   = None  # "HH:MM" 24小時制
 
 class LoanCreate(BaseModel):
     employee_id: int
@@ -249,6 +251,25 @@ async def admin_update_employee(
     )
     return {"message": "更新成功"}
 
+@app.delete("/api/admin/employees/{employee_id}")
+async def admin_delete_employee(
+    employee_id: int,
+    x_admin_secret: str = Header(default=""),
+    conn=Depends(get_db)
+):
+    check_admin(x_admin_secret)
+    emp = await conn.fetchrow("SELECT id, display_name FROM employees WHERE id=$1", employee_id)
+    if not emp:
+        raise HTTPException(status_code=404, detail="員工不存在")
+    # 依序刪除關聯資料，再刪員工
+    await conn.execute("DELETE FROM overtime_records WHERE employee_id=$1", employee_id)
+    await conn.execute("DELETE FROM loans          WHERE employee_id=$1", employee_id)
+    await conn.execute("DELETE FROM salary_periods WHERE employee_id=$1", employee_id)
+    await conn.execute("DELETE FROM work_days      WHERE employee_id=$1", employee_id)
+    await conn.execute("DELETE FROM clock_records  WHERE employee_id=$1", employee_id)
+    await conn.execute("DELETE FROM employees      WHERE id=$1", employee_id)
+    return {"message": f"員工 {emp['display_name']} 已刪除"}
+
 # ─── 管理員：出工日 ────────────────────────────────────────────────
 
 @app.get("/api/admin/workdays/{employee_id}")
@@ -281,6 +302,27 @@ async def admin_update_workday(
                WHERE id=$3""",
             body.day_value, body.note, workday_id
         )
+
+    if body.clock_in_time is not None or body.clock_out_time is not None:
+        wd_row = await conn.fetchrow("SELECT work_date FROM work_days WHERE id=$1", workday_id)
+        if wd_row:
+            tz = ZoneInfo("Asia/Taipei")
+            if body.clock_in_time is not None:
+                try:
+                    h, m = map(int, body.clock_in_time.split(":"))
+                    cin_dt = datetime(wd_row["work_date"].year, wd_row["work_date"].month,
+                                      wd_row["work_date"].day, h, m, 0, tzinfo=tz)
+                    await conn.execute("UPDATE work_days SET clock_in_time=$1 WHERE id=$2", cin_dt, workday_id)
+                except ValueError:
+                    raise HTTPException(status_code=400, detail="上班時間格式錯誤，請使用 HH:MM")
+            if body.clock_out_time is not None:
+                try:
+                    h, m = map(int, body.clock_out_time.split(":"))
+                    cout_dt = datetime(wd_row["work_date"].year, wd_row["work_date"].month,
+                                       wd_row["work_date"].day, h, m, 0, tzinfo=tz)
+                    await conn.execute("UPDATE work_days SET clock_out_time=$1 WHERE id=$2", cout_dt, workday_id)
+                except ValueError:
+                    raise HTTPException(status_code=400, detail="下班時間格式錯誤，請使用 HH:MM")
 
     if body.overtime_hours is not None:
         wd = await conn.fetchrow(

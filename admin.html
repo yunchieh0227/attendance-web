@@ -274,6 +274,11 @@ function toast(msg, type="success") {
 
 function fmt(n) { return (n||0).toLocaleString(); }
 
+function toHHMM(dtStr) {
+  const d = new Date(dtStr);
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
 // ── 員工 ──
 async function fetchEmployees() {
   try {
@@ -298,7 +303,10 @@ function renderEmpTable() {
       <td><input type="number" value="${e.tax||0}"            id="tx-${e.id}" style="width:68px"/></td>
       <td><input type="number" value="${e.agency_fee||0}"     id="af-${e.id}" style="width:68px"/></td>
       <td><span class="badge ${e.is_active?'badge-green':'badge-gray'}">${e.is_active?'在職':'停用'}</span></td>
-      <td><button class="btn btn-primary btn-sm" onclick="saveEmp(${e.id})">儲存</button></td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-primary btn-sm" onclick="saveEmp(${e.id})">儲存</button>
+        <button class="btn btn-danger btn-sm"  onclick="deleteEmp(${e.id},'${e.display_name.replace(/'/g,"\\'")}')">刪除</button>
+      </div></td>
     </tr>`).join("")}
   </table></div>`;
 }
@@ -313,6 +321,15 @@ async function saveEmp(id) {
     toast("✓ 員工設定已儲存");
     await fetchEmployees();
   } catch(e) { toast(e.message || "儲存失敗", "error"); }
+}
+
+async function deleteEmp(id, name) {
+  if (!confirm(`確定要刪除員工「${name}」？\n此操作將一併刪除該員工所有打卡、出工日、借支及薪資紀錄，且無法復原。`)) return;
+  try {
+    await api("DELETE", `/api/admin/employees/${id}`);
+    toast(`✓ 員工 ${name} 已刪除`);
+    await fetchEmployees();
+  } catch(e) { toast(e.message || "刪除失敗", "error"); }
 }
 
 // ── 出工日 ──
@@ -341,14 +358,16 @@ async function loadWorkdays(empId) {
   if (!rows.length) { document.getElementById("wd-list").innerHTML='<div class="empty">尚無出工日紀錄</div>'; return; }
 
   document.getElementById("wd-list").innerHTML = `<div style="overflow-x:auto"><table class="tbl">
-    <tr><th>日期</th><th>上班</th><th>下班</th><th>天數確認</th><th>加班(h)</th><th>備註</th></tr>
+    <tr><th>日期</th><th>上班</th><th>下班</th><th>時間</th><th>天數確認</th><th>加班(h)</th><th>備註</th></tr>
     ${rows.map(r=>{
-      const cin  = r.clock_in_time  ? new Date(r.clock_in_time).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}) : "—";
-      const cout = r.clock_out_time ? new Date(r.clock_out_time).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}) : "—";
+      const cinVal  = r.clock_in_time  ? toHHMM(r.clock_in_time)  : "";
+      const coutVal = r.clock_out_time ? toHHMM(r.clock_out_time) : "";
       const dv = r.day_value; const ot = otByDate[r.work_date]||0;
       return `<tr id="wr-${r.id}">
         <td style="font-family:var(--mono);font-size:12px">${r.work_date}</td>
-        <td>${cin}</td><td>${cout}</td>
+        <td><input type="time" id="cin-${r.id}"  value="${cinVal}"  style="width:90px;padding:3px 6px;font-size:12px"/></td>
+        <td><input type="time" id="cout-${r.id}" value="${coutVal}" style="width:90px;padding:3px 6px;font-size:12px"/></td>
+        <td><button id="ctbtn-${r.id}" class="btn btn-ghost btn-sm ot-check" onclick="saveClockTimes(${r.id})">儲存</button></td>
         <td><div class="day-btn-group">
           <button class="day-btn ${dv==1?'active-full':''}"   onclick="setDayVal(${r.id},1.0,this)">1天</button>
           <button class="day-btn ${dv==0.5?'active-half':''}" onclick="setDayVal(${r.id},0.5,this)">半天</button>
@@ -376,6 +395,22 @@ async function setDayVal(wdId, val, btn) {
     else btn.classList.add("active-none");
     toast("✓ 出工日已更新");
   } catch(e) { toast(e.message || "更新失敗", "error"); }
+}
+
+async function saveClockTimes(wdId) {
+  try {
+    const cinVal  = document.getElementById("cin-"+wdId).value;
+    const coutVal = document.getElementById("cout-"+wdId).value;
+    const body = {};
+    if (cinVal)  body.clock_in_time  = cinVal;
+    if (coutVal) body.clock_out_time = coutVal;
+    if (!cinVal && !coutVal) { toast("請輸入上班或下班時間","error"); return; }
+    await api("PATCH", `/api/admin/workdays/${wdId}`, body);
+    const btn = document.getElementById("ctbtn-"+wdId);
+    btn.classList.add("saved");
+    setTimeout(()=>btn.classList.remove("saved"), 2500);
+    toast("✓ 上下班時間已儲存");
+  } catch(e) { toast(e.message || "儲存失敗", "error"); }
 }
 
 async function saveOt(wdId) {
@@ -571,7 +606,7 @@ async function querySummary() {
         <th>加班費率</th><th>加班時數</th>
         <th>勞保</th><th>健保</th><th>稅金</th><th>仲介費</th>
         <th>借支扣款</th><th>借支餘額</th>
-        <th>應領</th><th>實領</th><th>備註</th>
+        <th>實領</th><th>備註</th>
       </tr>
       ${rows.map(r=>`<tr>
         <td style="font-weight:600">${r.display_name}</td>
@@ -586,14 +621,12 @@ async function querySummary() {
         <td>${fmt(r.agency_fee_snapshot||0)}</td>
         <td style="color:var(--red)">${fmt(r.loan_deduction)}</td>
         <td style="color:var(--red)">${fmt(r.loan_remaining_after)}</td>
-        <td style="font-weight:600">$${fmt(r.gross_salary)}</td>
         <td style="color:var(--green);font-weight:700">$${fmt(r.net_salary)}</td>
         <td style="color:var(--muted);font-size:12px">${r.note||"—"}</td>
       </tr>`).join("")}
       <tr class="total-row">
         <td colspan="12" style="text-align:right;font-size:12px;color:var(--muted)">合計</td>
-        <td>$${fmt(d.total_gross)}</td>
-        <td>$${fmt(d.total_net)}</td>
+        <td style="color:var(--green)">$${fmt(d.total_net)}</td>
         <td></td>
       </tr>
     </table></div>`;
