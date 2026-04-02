@@ -119,7 +119,6 @@
   <h1 id="title-h1">員工打卡系統</h1>
   <div class="info">
     <div><span data-i18n="labelName">姓名：</span><span id="name">—</span></div>
-    <div>LINE User ID：<span id="userId">—</span></div>
     <div><span data-i18n="labelTime">目前時間：</span><span id="frontendTime">—</span></div>
     <div><span data-i18n="labelLocation">目前定位：</span><span id="locationText"></span></div>
   </div>
@@ -502,8 +501,6 @@
       currentProfile = await liff.getProfile();
       nameEl.textContent   = currentProfile.displayName;
       userIdEl.textContent = currentProfile.userId;
-      panelUsed = true;
-      setPanel(T.initSuccess);
       clockInBtn.onclick  = () => sendClockRequest("clock_in");
       clockOutBtn.onclick = () => sendClockRequest("clock_out");
       recordBtn.onclick   = handleRecordClick;
