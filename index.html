@@ -315,7 +315,6 @@
   let recordsLoaded  = { workdays: false, salary: false };
 
   const nameEl         = document.getElementById("name");
-  const userIdEl       = document.getElementById("userId");
   const frontendTimeEl = document.getElementById("frontendTime");
   const locationTextEl = document.getElementById("locationText");
   const resultPanel    = document.getElementById("resultPanel");
@@ -499,8 +498,7 @@
       await liff.init({ liffId: LIFF_ID });
       if (!liff.isLoggedIn()) { liff.login(); return; }
       currentProfile = await liff.getProfile();
-      nameEl.textContent   = currentProfile.displayName;
-      userIdEl.textContent = currentProfile.userId;
+      nameEl.textContent = currentProfile.displayName;
       clockInBtn.onclick  = () => sendClockRequest("clock_in");
       clockOutBtn.onclick = () => sendClockRequest("clock_out");
       recordBtn.onclick   = handleRecordClick;
