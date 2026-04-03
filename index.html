@@ -169,7 +169,7 @@
       tabSalary:       '薪資明細',
       loading:         '載入中',
       noProfile:       '尚未取得 LINE 資料',
-      clocking:        '正在取得定位與送出打卡...',
+      clocking:        '正在送出打卡...',
       idTokenFail:     '取得 idToken 失敗，請重新開啟',
       serverFail:      '後端回傳失敗',
       clockInDone:     '打卡上班成功',
@@ -230,7 +230,7 @@
       tabSalary:       'Chi tiết lương',
       loading:         'Đang tải',
       noProfile:       'Chưa lấy được dữ liệu LINE',
-      clocking:        'Đang lấy vị trí và gửi chấm công...',
+      clocking:        'Đang gửi chấm công...',
       idTokenFail:     'Lấy idToken thất bại, vui lòng mở lại',
       serverFail:      'Máy chủ trả lỗi',
       clockInDone:     'Chấm công vào ca thành công',
@@ -304,10 +304,32 @@
       if (locationState === 'fetching') locEl.textContent = T.locationFetching;
       else if (locationState === 'denied') locEl.textContent = T.geoDeniedShort;
       else locEl.textContent = T.locationDefault;
+    } else if (locationState === 'ready' && locationCache) {
+      // 定位已就緒 → 用新語言重新取地址
+      reverseGeocode(locationCache.latitude, locationCache.longitude).then(addr => {
+        if (locationState === 'ready') {
+          locationCache.addressText = addr;
+          locEl.textContent = addr
+            ? `${addr}（±${Math.round(locationCache.accuracy)}m）`
+            : `${locationCache.latitude.toFixed(6)}, ${locationCache.longitude.toFixed(6)}（±${Math.round(locationCache.accuracy)}m）`;
+        }
+      });
     }
 
-    // 更新 resultPanel（只在尚未操作時更新）
-    if (!panelUsed) setPanel(T.panelDefault);
+    // 更新 resultPanel
+    if (!panelUsed) {
+      setPanel(T.panelDefault);
+    } else if (panelState) {
+      const d = panelState.data;
+      if (panelState.key === 'clockSuccess') {
+        const actionText = d.action === 'clock_in' ? T.clockInDone : T.clockOutDone;
+        setPanel(`${actionText}\n\n${T.panelName}：${d.displayName}\n${T.panelTime}：${d.time}\n${T.panelLoc}：${d.locationText}`, 'success');
+      } else if (panelState.key === 'geoDenied') {
+        setPanel(T.geoDeniedPermanent, 'error');
+      } else if (panelState.key === 'geoNotReady') {
+        setPanel(T.geoNotReady, 'error');
+      }
+    }
 
     // 更新 recordBtn（根據面板開/關狀態）
     const rBtn = document.getElementById('recordBtn');
@@ -327,6 +349,7 @@
   let recordsLoaded  = { workdays: false, salary: false };
   let locationState  = 'idle';   // 'idle' | 'fetching' | 'ready' | 'denied' | 'error'
   let locationCache  = null;     // { latitude, longitude, accuracy, addressText }
+  let panelState     = null;     // { key, data? } — 供切換語言時重新渲染 panel
 
   const nameEl         = document.getElementById("name");
   const frontendTimeEl = document.getElementById("frontendTime");
@@ -402,8 +425,9 @@
     try {
       const controller = new AbortController();
       const tid = setTimeout(() => controller.abort(), 5000);
+      const acceptLang = lang === 'vi' ? 'vi,zh-TW' : 'zh-TW,zh';
       const r = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=zh-TW,zh`,
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=${acceptLang}`,
         { signal: controller.signal }
       );
       clearTimeout(tid);
@@ -422,10 +446,10 @@
     // 定位未就緒 → 給指引，不送出打卡
     if (locationState !== 'ready') {
       if (locationState === 'denied') {
+        panelState = { key: 'geoDenied' };
         setPanel(T.geoDeniedPermanent, "error");
-      } else if (locationState === 'fetching') {
-        setPanel(T.geoNotReady, "error");
       } else {
+        panelState = { key: 'geoNotReady' };
         setPanel(T.geoNotReady, "error");
       }
       return;
@@ -452,6 +476,7 @@
       if (!r.ok) throw new Error(result.detail || T.serverFail);
 
       const actionText = type === "clock_in" ? T.clockInDone : T.clockOutDone;
+      panelState = { key: 'clockSuccess', data: { action: type, displayName: result.displayName, time: result.time, locationText: result.locationText } };
       setPanel(
         `${actionText}\n\n${T.panelName}：${result.displayName}\n${T.panelTime}：${result.time}\n${T.panelLoc}：${result.locationText}`,
         "success"
