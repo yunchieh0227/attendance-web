@@ -193,6 +193,7 @@
       timeOut:         '下班',
       badgeFull:       '整天',
       badgeHalf:       '半天',
+      badgeZero:       '0天',
       badgePending:    '待確認',
       noSalary:        '尚無已確認的薪資明細',
       salaryNote:      '管理員確認結算後才會顯示',
@@ -254,6 +255,7 @@
       timeOut:         'Giờ ra',
       badgeFull:       'Nguyên ngày',
       badgeHalf:       'Nửa ngày',
+      badgeZero:       'Không tính',
       badgePending:    'Chờ xác nhận',
       noSalary:        'Chưa có chi tiết lương đã xác nhận',
       salaryNote:      'Sẽ hiển thị sau khi quản lý xác nhận',
@@ -538,6 +540,7 @@
         const dv = row.day_value;
         const badge = dv==1   ? `<span class="wd-badge wd-full">${T.badgeFull}</span>`
                     : dv==0.5 ? `<span class="wd-badge wd-half">${T.badgeHalf}</span>`
+                    : dv===0  ? `<span class="wd-badge wd-pending">${T.badgeZero}</span>`
                     :           `<span class="wd-badge wd-pending">${T.badgePending}</span>`;
         return `<div class="wd-item">
           <div>
