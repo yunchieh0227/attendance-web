@@ -516,18 +516,33 @@ async def admin_create_salary_period(
         "loan_remaining_after": loan_remaining_after,
     }
 
-@app.get("/api/admin/salary_periods/{employee_id}")
+@app.get("/api/admin/salary_periods")
 async def admin_get_salary_periods(
-    employee_id: int,
+    employee_id:  Optional[int] = None,
+    period_label: Optional[str] = None,
+    status:       Optional[str] = None,
     x_admin_secret: str = Header(default=""),
     conn=Depends(get_db)
 ):
     check_admin(x_admin_secret)
+    if status is not None and status not in {"draft", "confirmed"}:
+        raise HTTPException(status_code=400, detail="status 只能是 draft 或 confirmed")
+
+    conditions: list[str] = []
+    params:     list      = []
+    if employee_id is not None:
+        params.append(employee_id);  conditions.append(f"sp.employee_id=${len(params)}")
+    if period_label:
+        params.append(period_label); conditions.append(f"sp.period_label=${len(params)}")
+    if status:
+        params.append(status);       conditions.append(f"sp.status=${len(params)}")
+
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
     rows = await conn.fetch(
-        """SELECT sp.*, e.display_name FROM salary_periods sp
-           JOIN employees e ON e.id = sp.employee_id
-           WHERE sp.employee_id=$1 ORDER BY sp.period_start DESC""",
-        employee_id
+        f"""SELECT sp.*, e.display_name FROM salary_periods sp
+            JOIN employees e ON e.id = sp.employee_id
+            {where} ORDER BY sp.period_start DESC""",
+        *params
     )
     return {"periods": [dict(r) for r in rows]}
 
