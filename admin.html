@@ -541,7 +541,7 @@ async function querySalary() {
 
     el.innerHTML = `<div style="overflow-x:auto"><table class="tbl">
       <tr>
-        <th>期別</th><th>結算日</th><th>日薪</th><th>天數</th>
+        <th>姓名</th><th>期別</th><th>結算日</th><th>日薪</th><th>天數</th>
         <th>加班費率</th><th>加班時數</th>
         <th>勞保</th><th>健保</th><th>稅金</th><th>仲介費</th>
         <th>借支扣款</th><th>借支餘額</th>
@@ -549,6 +549,7 @@ async function querySalary() {
         <th>備註</th><th>狀態</th><th>操作</th>
       </tr>
       ${rows.map(r=>`<tr id="sr-${r.id}">
+        <td style="font-weight:600">${r.display_name}</td>
         <td style="font-family:var(--mono);font-size:12px">${r.period_label}</td>
         <td style="font-size:12px">${r.settlement_date||"—"}</td>
         <td>$${fmt(r.daily_rate_snapshot)}</td>
