@@ -383,9 +383,10 @@ async function loadWorkdays(empId) {
         <td><input type="text" id="cout-${r.id}" value="${coutVal}" placeholder="HH:MM" maxlength="5" style="width:68px;padding:4px 6px;font-size:12px;text-align:center;font-family:var(--mono)"/></td>
         <td><button id="ctbtn-${r.id}" class="btn btn-ghost btn-sm ot-check" onclick="saveClockTimes(${r.id})">儲存</button></td>
         <td><div class="day-btn-group">
-          <button class="day-btn ${dv==1?'active-full':''}"   onclick="setDayVal(${r.id},1.0,this)">1天</button>
-          <button class="day-btn ${dv==0.5?'active-half':''}" onclick="setDayVal(${r.id},0.5,this)">半天</button>
-          <button class="day-btn ${dv==null||dv==0?'active-none':''}" onclick="setDayVal(${r.id},null,this)">不算</button>
+          <button class="day-btn ${dv==1?'active-full':''}"    onclick="setDayVal(${r.id},1.0,this)">1天</button>
+          <button class="day-btn ${dv==0.5?'active-half':''}"  onclick="setDayVal(${r.id},0.5,this)">半天</button>
+          <button class="day-btn ${dv===0?'active-none':''}"   onclick="setDayVal(${r.id},0,this)">0天</button>
+          <button class="day-btn ${dv===null?'active-none':''}" onclick="setDayVal(${r.id},null,this)">不算</button>
         </div></td>
         <td><div style="display:flex;gap:4px;align-items:center">
           <input type="number" id="ot-${r.id}" value="${ot}" step="0.5" min="0" style="width:56px;padding:4px 6px;font-size:12px"/>
