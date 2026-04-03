@@ -54,6 +54,7 @@ class ClockRequest(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     accuracy: Optional[float] = None
+    address_text: Optional[str] = None
 
 class EmployeeUpdate(BaseModel):
     daily_rate:       Optional[int]  = None
@@ -146,37 +147,42 @@ async def clock(payload: ClockRequest, conn=Depends(get_db)):
     location_text = "未提供定位"
     if payload.latitude is not None and payload.longitude is not None:
         acc = f" (±{round(payload.accuracy)}m)" if payload.accuracy is not None else ""
-        location_text = f"{payload.latitude:.6f}, {payload.longitude:.6f}{acc}"
+        if payload.address_text:
+            location_text = f"{payload.address_text}{acc}"
+        else:
+            location_text = f"{payload.latitude:.6f}, {payload.longitude:.6f}{acc}"
 
     employee_id = await get_or_create_employee(conn, line_user_id, display_name)
 
     await conn.execute(
         """INSERT INTO clock_records
            (employee_id, line_user_id, action, server_time, frontend_time,
-            latitude, longitude, accuracy)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)""",
+            latitude, longitude, accuracy, address_text)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)""",
         employee_id, line_user_id, payload.action, now,
-        payload.frontendTime, payload.latitude, payload.longitude, payload.accuracy
+        payload.frontendTime, payload.latitude, payload.longitude, payload.accuracy,
+        payload.address_text
     )
 
     today = now.date()
     if payload.action == "clock_in":
         await conn.execute(
-            """INSERT INTO work_days (employee_id, work_date, clock_in_time)
-               VALUES ($1,$2,$3)
+            """INSERT INTO work_days (employee_id, work_date, clock_in_time, clock_in_address)
+               VALUES ($1,$2,$3,$4)
                ON CONFLICT (employee_id, work_date)
-               DO UPDATE SET clock_in_time = EXCLUDED.clock_in_time""",
-            employee_id, today, now
+               DO UPDATE SET clock_in_time    = EXCLUDED.clock_in_time,
+                             clock_in_address = EXCLUDED.clock_in_address""",
+            employee_id, today, now, payload.address_text
         )
     else:
         result = await conn.execute(
-            "UPDATE work_days SET clock_out_time=$1 WHERE employee_id=$2 AND work_date=$3",
-            now, employee_id, today
+            "UPDATE work_days SET clock_out_time=$1, clock_out_address=$2 WHERE employee_id=$3 AND work_date=$4",
+            now, payload.address_text, employee_id, today
         )
         if result == "UPDATE 0":
             await conn.execute(
-                "INSERT INTO work_days (employee_id, work_date, clock_out_time) VALUES ($1,$2,$3)",
-                employee_id, today, now
+                "INSERT INTO work_days (employee_id, work_date, clock_out_time, clock_out_address) VALUES ($1,$2,$3,$4)",
+                employee_id, today, now, payload.address_text
             )
 
     return {

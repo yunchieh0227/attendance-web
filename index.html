@@ -183,6 +183,10 @@
       geoUnavailable:  '無法取得定位',
       geoTimeout:      '定位逾時',
       geoFail:         '定位失敗',
+      locationFetching:    '定位中，請稍候...',
+      geoDeniedShort:      '定位已封鎖',
+      geoNotReady:         '⚠️ 尚未取得定位，無法打卡。\n請等畫面上方定位顯示成功後再試。',
+      geoDeniedPermanent:  '⚠️ 定位已被封鎖，無法打卡。\n\n請依照以下步驟開啟定位權限後，重新整理頁面：\n\n📱 Android\n手機設定 → 應用程式 → LINE → 權限 → 位置\n\n🍎 iOS\n設定 → LINE → 位置 → 選「使用 App 期間」',
       noWorkdays:      '尚無出工紀錄',
       loadFail:        '載入失敗：',
       timeIn:          '上班',
@@ -240,6 +244,10 @@
       geoUnavailable:  'Không thể lấy vị trí',
       geoTimeout:      'Hết thời gian định vị',
       geoFail:         'Lấy vị trí thất bại',
+      locationFetching:    'Đang xác định vị trí...',
+      geoDeniedShort:      'Vị trí bị chặn',
+      geoNotReady:         '⚠️ Chưa xác định được vị trí, không thể chấm công.\nVui lòng chờ vị trí hiển thị thành công rồi thử lại.',
+      geoDeniedPermanent:  '⚠️ Quyền định vị bị chặn, không thể chấm công.\n\nVui lòng mở quyền định vị rồi tải lại trang:\n\n📱 Android\nCài đặt → Ứng dụng → LINE → Quyền → Vị trí\n\n🍎 iOS\nCài đặt → LINE → Vị trí → Chọn "Khi sử dụng App"',
       noWorkdays:      'Chưa có hồ sơ ngày công',
       loadFail:        'Tải thất bại：',
       timeIn:          'Giờ vào',
@@ -290,9 +298,13 @@
       el.textContent = T[el.dataset.i18n] || '';
     });
 
-    // 更新定位預設文字（只在尚未取得定位時更新）
+    // 更新定位文字（根據目前狀態）
     const locEl = document.getElementById('locationText');
-    if (!locEl.dataset.hasLocation) locEl.textContent = T.locationDefault;
+    if (!locEl.dataset.hasLocation) {
+      if (locationState === 'fetching') locEl.textContent = T.locationFetching;
+      else if (locationState === 'denied') locEl.textContent = T.geoDeniedShort;
+      else locEl.textContent = T.locationDefault;
+    }
 
     // 更新 resultPanel（只在尚未操作時更新）
     if (!panelUsed) setPanel(T.panelDefault);
@@ -313,6 +325,8 @@
 
   let currentProfile = null;
   let recordsLoaded  = { workdays: false, salary: false };
+  let locationState  = 'idle';   // 'idle' | 'fetching' | 'ready' | 'denied' | 'error'
+  let locationCache  = null;     // { latitude, longitude, accuracy, addressText }
 
   const nameEl         = document.getElementById("name");
   const frontendTimeEl = document.getElementById("frontendTime");
@@ -337,40 +351,99 @@
   function p(n) { return String(n).padStart(2,"0"); }
   function setDisabled(v) { clockInBtn.disabled=v; clockOutBtn.disabled=v; recordBtn.disabled=v; }
 
-  function getCurrentLocation() {
-    return new Promise((res,rej) => {
-      if (!navigator.geolocation) { rej(new Error(T.geoNoSupport)); return; }
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-          const {latitude,longitude,accuracy} = pos.coords;
-          locationTextEl.textContent = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}（±${Math.round(accuracy)}m）`;
-          locationTextEl.dataset.hasLocation = "1";
-          res({latitude,longitude,accuracy});
-        },
-        err => {
-          const msgs = {1: T.geoDenied, 2: T.geoUnavailable, 3: T.geoTimeout};
-          rej(new Error(msgs[err.code] || T.geoFail));
-        },
-        {enableHighAccuracy:true, timeout:10000, maximumAge:0}
+  async function initLocation() {
+    locationCache = null;
+    locationTextEl.dataset.hasLocation = "";
+
+    if (!navigator.geolocation) {
+      locationState = 'error';
+      locationTextEl.textContent = T.geoNoSupport;
+      return;
+    }
+    if (navigator.permissions) {
+      try {
+        const perm = await navigator.permissions.query({ name: 'geolocation' });
+        if (perm.state === 'denied') {
+          locationState = 'denied';
+          locationTextEl.textContent = T.geoDeniedShort;
+          return;
+        }
+      } catch {}
+    }
+    locationState = 'fetching';
+    locationTextEl.textContent = T.locationFetching;
+    try {
+      const pos = await new Promise((res, rej) =>
+        navigator.geolocation.getCurrentPosition(res, rej,
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 })
       );
-    });
+      const { latitude, longitude, accuracy } = pos.coords;
+      const addressText = await reverseGeocode(latitude, longitude);
+      locationCache = { latitude, longitude, accuracy, addressText };
+      locationState = 'ready';
+      locationTextEl.dataset.hasLocation = "1";
+      locationTextEl.textContent = addressText
+        ? `${addressText}（±${Math.round(accuracy)}m）`
+        : `${latitude.toFixed(6)}, ${longitude.toFixed(6)}（±${Math.round(accuracy)}m）`;
+    } catch(err) {
+      locationCache = null;
+      locationTextEl.dataset.hasLocation = "";
+      if (err.code === 1) {
+        locationState = 'denied';
+        locationTextEl.textContent = T.geoDeniedShort;
+      } else {
+        locationState = 'error';
+        locationTextEl.textContent = T.locationDefault;
+      }
+    }
+  }
+
+  async function reverseGeocode(lat, lon) {
+    try {
+      const controller = new AbortController();
+      const tid = setTimeout(() => controller.abort(), 5000);
+      const r = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=zh-TW,zh`,
+        { signal: controller.signal }
+      );
+      clearTimeout(tid);
+      if (!r.ok) return null;
+      const d = await r.json();
+      return d.display_name || null;
+    } catch {
+      return null;
+    }
   }
 
   async function sendClockRequest(type) {
     if (!currentProfile) { setPanel(T.noProfile, "error"); return; }
+    panelUsed = true;
+
+    // 定位未就緒 → 給指引，不送出打卡
+    if (locationState !== 'ready') {
+      if (locationState === 'denied') {
+        setPanel(T.geoDeniedPermanent, "error");
+      } else if (locationState === 'fetching') {
+        setPanel(T.geoNotReady, "error");
+      } else {
+        setPanel(T.geoNotReady, "error");
+      }
+      return;
+    }
+
     try {
       setDisabled(true);
-      panelUsed = true;
       setPanel(T.clocking);
       const idToken = liff.getIDToken();
       if (!idToken) throw new Error(T.idTokenFail);
-      const loc = await getCurrentLocation();
+      const { latitude, longitude, accuracy, addressText } = locationCache;
       const payload = {
         action: type, idToken,
         lineUserId: currentProfile.userId,
         displayName: currentProfile.displayName,
         frontendTime: formatLocalTime(new Date()),
-        ...loc
+        address_text: addressText,
+        latitude, longitude, accuracy
       };
       const r = await fetch(`${API_BASE_URL}/api/clock`, {
         method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)
@@ -502,6 +575,7 @@
       clockInBtn.onclick  = () => sendClockRequest("clock_in");
       clockOutBtn.onclick = () => sendClockRequest("clock_out");
       recordBtn.onclick   = handleRecordClick;
+      initLocation();
     } catch(e) {
       panelUsed = true;
       setPanel(T.initFail + e.message, "error");
