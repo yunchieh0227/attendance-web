@@ -425,9 +425,8 @@
     try {
       const controller = new AbortController();
       const tid = setTimeout(() => controller.abort(), 5000);
-      const acceptLang = lang === 'vi' ? 'vi,zh-TW' : 'zh-TW,zh';
       const r = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=${acceptLang}`,
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=zh-TW,zh`,
         { signal: controller.signal }
       );
       clearTimeout(tid);
