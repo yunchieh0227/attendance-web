@@ -372,10 +372,10 @@ async function loadWorkdays(empId) {
       const coutVal = r.clock_out_time ? toHHMM(r.clock_out_time) : "";
       const dv = r.day_value; const ot = otByDate[r.work_date]||0;
       const cinLink  = r.clock_in_address
-        ? `<a href="https://maps.google.com/?q=${encodeURIComponent(r.clock_in_address)}"  target="_blank" title="${r.clock_in_address.replace(/"/g,'&quot;')}"  style="color:var(--green);font-size:11px;text-decoration:none">📍 上班</a>`
+        ? `<a href="https://maps.google.com/?q=${encodeURIComponent(r.clock_in_address)}"  target="_blank" style="color:var(--green);font-size:11px;text-decoration:none;flex-shrink:0">📍</a><span style="font-size:11px;color:var(--text);margin-left:3px">${r.clock_in_address}</span>`
         : '<span style="color:var(--muted);font-size:11px">—</span>';
       const coutLink = r.clock_out_address
-        ? `<a href="https://maps.google.com/?q=${encodeURIComponent(r.clock_out_address)}" target="_blank" title="${r.clock_out_address.replace(/"/g,'&quot;')}" style="color:var(--amber);font-size:11px;text-decoration:none">📍 下班</a>`
+        ? `<a href="https://maps.google.com/?q=${encodeURIComponent(r.clock_out_address)}" target="_blank" style="color:var(--amber);font-size:11px;text-decoration:none;flex-shrink:0">📍</a><span style="font-size:11px;color:var(--text);margin-left:3px">${r.clock_out_address}</span>`
         : '<span style="color:var(--muted);font-size:11px">—</span>';
       return `<tr id="wr-${r.id}">
         <td style="font-family:var(--mono);font-size:12px">${r.work_date}</td>
@@ -392,7 +392,10 @@ async function loadWorkdays(empId) {
           <button id="otbtn-${r.id}" class="btn btn-ghost btn-sm ot-check" onclick="saveOt(${r.id})">✓</button>
         </div></td>
         <td><input type="text" id="note-${r.id}" value="${r.note||''}" style="width:88px;font-size:12px" placeholder="備註"/></td>
-        <td style="white-space:nowrap">${cinLink}<br>${coutLink}</td>
+        <td style="max-width:180px">
+          <div style="display:flex;align-items:baseline;gap:2px;margin-bottom:3px">${cinLink}</div>
+          <div style="display:flex;align-items:baseline;gap:2px">${coutLink}</div>
+        </td>
       </tr>`;
     }).join("")}
   </table></div>`;

@@ -433,7 +433,14 @@
       clearTimeout(tid);
       if (!r.ok) return null;
       const d = await r.json();
-      return d.display_name || null;
+      const a = d.address || {};
+      const parts = [
+        a.city || a.county,
+        a.district || a.suburb,
+        a.road,
+        a.house_number
+      ].filter(Boolean);
+      return parts.length ? parts.join('') : (d.display_name || null);
     } catch {
       return null;
     }
