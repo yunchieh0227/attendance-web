@@ -125,7 +125,7 @@
 
   <div class="clock-btns">
     <button class="in"  id="clockInBtn"  data-i18n="btnClockIn">上班打卡</button>
-    <button class="out" id="clockOutBtn" data-i18n="btnClockOut">下班打卡</button>
+    <button class="out" id="clockOutBtn" data-i18n="btnClockOut" disabled>下班打卡</button>
   </div>
   <button class="record" id="recordBtn" data-i18n="btnRecord">查看本期紀錄</button>
 
@@ -161,6 +161,7 @@
       locationDefault: '尚未取得',
       btnClockIn:      '上班打卡',
       btnClockOut:     '下班打卡',
+      todayDone:       '本日打卡完成 ✓',
       btnRecord:       '查看本期紀錄',
       btnRecordClose:  '收起紀錄',
       panelDefault:    '尚未操作',
@@ -223,6 +224,7 @@
       locationDefault: 'Chưa xác định được vị trí',
       btnClockIn:      'Chấm công vào ca',
       btnClockOut:     'Chấm công ra ca',
+      todayDone:       'Hôm nay đã chấm công xong ✓',
       btnRecord:       'Xem lịch sử kỳ này',
       btnRecordClose:  'Thu gọn',
       panelDefault:    'Chưa thao tác',
@@ -330,6 +332,8 @@
         setPanel(T.geoDeniedPermanent, 'error');
       } else if (panelState.key === 'geoNotReady') {
         setPanel(T.geoNotReady, 'error');
+      } else if (panelState.key === 'todayDone') {
+        setPanel(T.todayDone, 'success');
       }
     }
 
@@ -352,6 +356,49 @@
   let locationState  = 'idle';   // 'idle' | 'fetching' | 'ready' | 'denied' | 'error'
   let locationCache  = null;     // { latitude, longitude, accuracy, addressText }
   let panelState     = null;     // { key, data? } — 供切換語言時重新渲染 panel
+
+  // ── 當日打卡狀態 (localStorage) ──────────────────────────────────
+  let clockState = { clockedIn: false, clockedOut: false };
+
+  function todayKey() {
+    const d = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+  function loadClockState() {
+    try {
+      const s = JSON.parse(localStorage.getItem('clockState') || '{}');
+      if (s.date === todayKey()) {
+        clockState = { clockedIn: !!s.clockedIn, clockedOut: !!s.clockedOut };
+      } else {
+        clockState = { clockedIn: false, clockedOut: false };
+      }
+    } catch { clockState = { clockedIn: false, clockedOut: false }; }
+  }
+  function saveClockState() {
+    localStorage.setItem('clockState', JSON.stringify({ date: todayKey(), ...clockState }));
+  }
+  function applyClockState() {
+    if (clockState.clockedOut) {
+      clockInBtn.disabled  = true;
+      clockOutBtn.disabled = true;
+      panelUsed = true;
+      panelState = { key: 'todayDone' };
+      setPanel(T.todayDone, 'success');
+    } else if (clockState.clockedIn) {
+      clockInBtn.disabled  = true;
+      clockOutBtn.disabled = false;
+    } else {
+      clockInBtn.disabled  = false;
+      clockOutBtn.disabled = true;
+    }
+  }
+
+  // 每 60 秒檢查日期，跨午夜自動刷新頁面（清掉狀態）
+  let _todayKey = todayKey();
+  setInterval(() => {
+    if (todayKey() !== _todayKey) location.reload();
+  }, 60000);
 
   const nameEl         = document.getElementById("name");
   const frontendTimeEl = document.getElementById("frontendTime");
@@ -464,7 +511,9 @@
     }
 
     try {
-      setDisabled(true);
+      clockInBtn.disabled = true;
+      clockOutBtn.disabled = true;
+      recordBtn.disabled = true;
       setPanel(T.clocking);
       const idToken = liff.getIDToken();
       if (!idToken) throw new Error(T.idTokenFail);
@@ -483,6 +532,10 @@
       const result = await r.json();
       if (!r.ok) throw new Error(result.detail || T.serverFail);
 
+      if (type === "clock_in") { clockState.clockedIn = true; }
+      else                     { clockState.clockedOut = true; }
+      saveClockState();
+
       const actionText = type === "clock_in" ? T.clockInDone : T.clockOutDone;
       panelState = { key: 'clockSuccess', data: { action: type, displayName: result.displayName, time: result.time, locationText: result.locationText } };
       setPanel(
@@ -493,7 +546,8 @@
     } catch(e) {
       setPanel(T.opFail + e.message, "error");
     } finally {
-      setDisabled(false);
+      recordBtn.disabled = false;
+      applyClockState();
     }
   }
 
@@ -609,6 +663,8 @@
       clockInBtn.onclick  = () => sendClockRequest("clock_in");
       clockOutBtn.onclick = () => sendClockRequest("clock_out");
       recordBtn.onclick   = handleRecordClick;
+      loadClockState();
+      applyClockState();
       initLocation();
     } catch(e) {
       panelUsed = true;
