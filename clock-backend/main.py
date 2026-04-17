@@ -132,7 +132,7 @@ async def get_or_create_employee(conn, line_user_id: str, display_name: str) -> 
 async def root():
     return {"message": "Clock backend v0.3 is running"}
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET","HEAD"])
 async def health():
     return {"ok": True}
 
