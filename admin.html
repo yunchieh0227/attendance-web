@@ -300,7 +300,7 @@ function renderEmpTable() {
   const el = document.getElementById("emp-list");
   if (!employees.length) { el.innerHTML='<div class="empty">尚無員工</div>'; return; }
   el.innerHTML = `<div style="overflow-x:auto"><table class="tbl">
-    <tr><th>ID</th><th>姓名</th><th>日薪</th><th>加班費/hr</th><th>勞保</th><th>健保</th><th>稅金</th><th>仲介費</th><th>狀態</th><th>操作</th></tr>
+    <tr><th>ID</th><th>姓名</th><th>日薪</th><th>加班費/hr</th><th>勞保</th><th>健保</th><th>稅金</th><th>仲介費</th><th>付款方式</th><th>狀態</th><th>操作</th></tr>
     ${employees.map(e=>`<tr>
       <td style="font-family:var(--mono);color:var(--muted);font-size:11px">${e.id}</td>
       <td style="font-weight:600">${e.display_name}</td>
@@ -310,6 +310,10 @@ function renderEmpTable() {
       <td><input type="number" value="${e.health_insurance}"  id="hi-${e.id}" style="width:68px"/></td>
       <td><input type="number" value="${e.tax||0}"            id="tx-${e.id}" style="width:68px"/></td>
       <td><input type="number" value="${e.agency_fee||0}"     id="af-${e.id}" style="width:68px"/></td>
+      <td><select id="pm-${e.id}" style="width:80px">
+        <option value="cash"     ${(e.payment_method||'cash')==='cash'    ?'selected':''}>現金</option>
+        <option value="transfer" ${(e.payment_method||'cash')==='transfer'?'selected':''}>轉帳</option>
+      </select></td>
       <td><span class="badge ${e.is_active?'badge-green':'badge-gray'}">${e.is_active?'在職':'停用'}</span></td>
       <td><div style="display:flex;gap:4px">
         <button class="btn btn-primary btn-sm" onclick="saveEmp(${e.id})">儲存</button>
@@ -322,9 +326,11 @@ function renderEmpTable() {
 async function saveEmp(id) {
   try {
     const g = k => +document.getElementById(k+"-"+id).value;
+    const pm = document.getElementById("pm-"+id).value;
     await api("PATCH", `/api/admin/employees/${id}`, {
       daily_rate:g("dr"), overtime_rate:g("or"), labor_insurance:g("li"),
       health_insurance:g("hi"), tax:g("tx"), agency_fee:g("af"),
+      payment_method: pm,
     });
     toast("✓ 員工設定已儲存");
     await fetchEmployees();
@@ -631,9 +637,10 @@ async function querySummary() {
     const rows = d.periods||[];
     if (!rows.length) { el.innerHTML='<div class="empty">此期別尚無已確認結算單</div>'; return; }
 
+    const pmLabel = pm => pm === 'transfer' ? '轉帳' : '現金';
     el.innerHTML = `<div style="overflow-x:auto"><table class="tbl">
       <tr>
-        <th>姓名</th><th>結算日</th><th>日薪</th><th>天數</th>
+        <th>姓名</th><th>付款方式</th><th>結算日</th><th>日薪</th><th>天數</th>
         <th>加班費率</th><th>加班時數</th>
         <th>勞保</th><th>健保</th><th>稅金</th><th>仲介費</th>
         <th>借支扣款</th><th>借支餘額</th>
@@ -641,6 +648,7 @@ async function querySummary() {
       </tr>
       ${rows.map(r=>`<tr>
         <td style="font-weight:600">${r.display_name}</td>
+        <td><span class="badge ${(r.payment_method||'cash')==='transfer'?'badge-amber':'badge-gray'}">${pmLabel(r.payment_method)}</span></td>
         <td style="font-size:12px">${r.settlement_date||"—"}</td>
         <td>$${fmt(r.daily_rate_snapshot)}</td>
         <td>${r.total_days}</td>
@@ -656,11 +664,25 @@ async function querySummary() {
         <td style="color:var(--muted);font-size:12px">${r.note||"—"}</td>
       </tr>`).join("")}
       <tr class="total-row">
-        <td colspan="12" style="text-align:right;font-size:12px;color:var(--muted)">合計</td>
+        <td colspan="13" style="text-align:right;font-size:12px;color:var(--muted)">合計</td>
         <td style="color:var(--green)">$${fmt(d.total_net)}</td>
         <td></td>
       </tr>
-    </table></div>`;
+    </table></div>
+    <div style="display:flex;gap:16px;margin-top:14px;flex-wrap:wrap">
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 20px;min-width:140px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">現金合計</div>
+        <div style="font-size:20px;font-weight:700;color:var(--text)">$${fmt(d.cash_net)}</div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 20px;min-width:140px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">轉帳合計</div>
+        <div style="font-size:20px;font-weight:700;color:var(--amber)">$${fmt(d.transfer_net)}</div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--green-dim);border-radius:10px;padding:12px 20px;min-width:140px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">全部合計</div>
+        <div style="font-size:20px;font-weight:700;color:var(--green)">$${fmt(d.total_net)}</div>
+      </div>
+    </div>`;
   } catch(e) { el.innerHTML=`<div class="empty">載入失敗：${e.message}</div>`; }
 }
 </script>

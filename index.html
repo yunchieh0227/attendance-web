@@ -82,6 +82,7 @@
     }
     .wd-full { background: #eefaf3; color: #146c36; }
     .wd-half { background: #fff8e6; color: #9a6700; }
+    .wd-zero    { background: #fff0f0; color: #c0392b; }
     .wd-pending { background: #f0f0f0; color: #888; }
 
     .sal-card {
@@ -594,7 +595,7 @@
         const dv = row.day_value;
         const badge = dv==1   ? `<span class="wd-badge wd-full">${T.badgeFull}</span>`
                     : dv==0.5 ? `<span class="wd-badge wd-half">${T.badgeHalf}</span>`
-                    : dv===0  ? `<span class="wd-badge wd-pending">${T.badgeZero}</span>`
+                    : dv===0  ? `<span class="wd-badge wd-zero">${T.badgeZero}</span>`
                     :           `<span class="wd-badge wd-pending">${T.badgePending}</span>`;
         return `<div class="wd-item">
           <div>

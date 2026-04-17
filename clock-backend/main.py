@@ -64,6 +64,7 @@ class EmployeeUpdate(BaseModel):
     tax:              Optional[int]  = None
     agency_fee:       Optional[int]  = None
     is_active:        Optional[bool] = None
+    payment_method:   Optional[str]  = None
 
 class WorkDayUpdate(BaseModel):
     day_value:      Optional[float] = None
@@ -618,7 +619,7 @@ async def admin_period_summary(
 ):
     check_admin(x_admin_secret)
     rows = await conn.fetch(
-        """SELECT sp.*, e.display_name FROM salary_periods sp
+        """SELECT sp.*, e.display_name, e.payment_method FROM salary_periods sp
            JOIN employees e ON e.id = sp.employee_id
            WHERE sp.period_label=$1 AND sp.status='confirmed'
            ORDER BY e.display_name""",
@@ -627,4 +628,7 @@ async def admin_period_summary(
     data        = [dict(r) for r in rows]
     total_gross = sum(r["gross_salary"] for r in data)
     total_net   = sum(r["net_salary"]   for r in data)
-    return {"periods": data, "total_gross": total_gross, "total_net": total_net}
+    cash_net     = sum(r["net_salary"] for r in data if (r.get("payment_method") or "cash") == "cash")
+    transfer_net = sum(r["net_salary"] for r in data if (r.get("payment_method") or "cash") == "transfer")
+    return {"periods": data, "total_gross": total_gross, "total_net": total_net,
+            "cash_net": cash_net, "transfer_net": transfer_net}
