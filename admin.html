@@ -88,6 +88,18 @@
   .ot-check{transition:all .3s}
   .ot-check.saved{background:var(--green-dim)!important;color:var(--green)!important;border-color:var(--green)!important}
 
+  /* deduction switches */
+  .ded-switches{display:flex;gap:10px;flex-wrap:wrap}
+  .ded-switch{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-size:13px;user-select:none;transition:all .2s}
+  .ded-switch .knob{width:30px;height:16px;border-radius:8px;background:var(--border);position:relative;transition:background .2s}
+  .ded-switch .knob::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--muted);transition:all .2s}
+  .ded-switch.on{border-color:var(--green);color:var(--green)}
+  .ded-switch.on .knob{background:var(--green-dim)}
+  .ded-switch.on .knob::after{left:16px;background:var(--green)}
+  .ded-switch.off{color:var(--muted)}
+  .ded-off{opacity:.4}
+  .ded-off-tag{display:block;font-size:10px;color:var(--amber);font-weight:400}
+
   .empty{color:var(--muted);font-size:14px;text-align:center;padding:32px 0}
   .loading{color:var(--muted);font-size:13px;padding:20px 0;text-align:center}
 
@@ -131,6 +143,10 @@
 
     <!-- 員工管理 -->
     <div id="tab-employees">
+      <div class="card">
+        <div class="card-title">扣除項目開關（關閉後結算時以 0 計算，員工設定值保留）</div>
+        <div class="ded-switches" id="ded-switches"></div>
+      </div>
       <div class="card">
         <div class="card-title">員工列表（修改後按儲存）</div>
         <div id="emp-list"><div class="loading">載入中...</div></div>
@@ -187,6 +203,7 @@
           <div class="form-group"><span class="form-label">備註</span><input type="text" id="sal-note" style="width:160px" placeholder="可空白"/></div>
           <button class="btn btn-primary" onclick="createSalaryPeriod()">產生結算單</button>
         </div>
+        <div id="sal-ded-status" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
         <div id="sal-result" style="font-size:14px;color:var(--muted)"></div>
       </div>
       <div class="card">
@@ -230,6 +247,8 @@
 const API = "https://attendance-backend-g8k9.onrender.com";
 let SECRET = "";
 let employees = [];
+let deductions = {labor_insurance:true, health_insurance:true, tax:true, agency_fee:true};
+const DED_LABELS = {labor_insurance:"勞保", health_insurance:"健保", tax:"稅金", agency_fee:"仲介費"};
 const TABS = ["employees","workdays","loans","salary","summary"];
 
 // ── auth ──
@@ -260,7 +279,7 @@ function switchTab(name) {
   document.querySelectorAll(".tab").forEach((el,i) => el.classList.toggle("active", TABS[i]===name));
   if (name==="workdays") buildEmpChips("wd-emp-chips", loadWorkdays);
   if (name==="loans")    { buildEmpSelect("loan-emp"); buildEmpSelect("loan-query-emp"); }
-  if (name==="salary")   { buildEmpSelect("sal-emp"); buildEmpSelect("sal-query-emp", true); }
+  if (name==="salary")   { buildEmpSelect("sal-emp"); buildEmpSelect("sal-query-emp", true); renderDedStatus(); }
   if (name==="summary")  loadSummaryLabels();
 }
 
@@ -290,26 +309,56 @@ function toHHMM(dtStr) {
 // ── 員工 ──
 async function fetchEmployees() {
   try {
-    const d = await api("GET", "/api/admin/employees");
+    const [d, s] = await Promise.all([
+      api("GET", "/api/admin/employees"),
+      api("GET", "/api/admin/settings"),
+    ]);
     if (!d.employees) return false;
-    employees = d.employees; renderEmpTable(); return true;
+    employees = d.employees; deductions = s.deductions;
+    renderDedSwitches(); renderEmpTable(); return true;
   } catch { return false; }
+}
+
+// ── 扣除項目開關 ──
+function renderDedSwitches() {
+  document.getElementById("ded-switches").innerHTML = Object.keys(DED_LABELS).map(k =>
+    `<div class="ded-switch ${deductions[k]?'on':'off'}" onclick="toggleDed('${k}')">
+      <span class="knob"></span>${DED_LABELS[k]}：${deductions[k]?'扣除':'不扣'}
+    </div>`).join("");
+}
+
+function renderDedStatus() {
+  const off = Object.keys(DED_LABELS).filter(k => !deductions[k]).map(k => DED_LABELS[k]);
+  document.getElementById("sal-ded-status").innerHTML = off.length
+    ? `<span style="color:var(--amber)">⚠ 本次結算不扣：${off.join("、")}</span>（可至員工管理切換）`
+    : `扣除項目：勞保、健保、稅金、仲介費 皆照常扣除`;
+}
+
+async function toggleDed(key) {
+  try {
+    const d = await api("PATCH", "/api/admin/settings", {[key]: !deductions[key]});
+    deductions = d.deductions;
+    renderDedSwitches(); renderEmpTable(); renderDedStatus();
+    toast(`✓ ${DED_LABELS[key]}已${deductions[key]?'啟用扣除':'停用扣除'}`);
+  } catch(e) { toast(e.message || "切換失敗", "error"); }
 }
 
 function renderEmpTable() {
   const el = document.getElementById("emp-list");
   if (!employees.length) { el.innerHTML='<div class="empty">尚無員工</div>'; return; }
+  const dc  = k => deductions[k] ? '' : 'class="ded-off"';
+  const dth = k => `<th>${DED_LABELS[k]}${deductions[k] ? '' : '<span class="ded-off-tag">本期不扣</span>'}</th>`;
   el.innerHTML = `<div style="overflow-x:auto"><table class="tbl">
-    <tr><th>ID</th><th>姓名</th><th>日薪</th><th>加班費/hr</th><th>勞保</th><th>健保</th><th>稅金</th><th>仲介費</th><th>付款方式</th><th>狀態</th><th>操作</th></tr>
+    <tr><th>ID</th><th>姓名</th><th>日薪</th><th>加班費/hr</th>${dth("labor_insurance")}${dth("health_insurance")}${dth("tax")}${dth("agency_fee")}<th>付款方式</th><th>狀態</th><th>操作</th></tr>
     ${employees.map(e=>`<tr>
       <td style="font-family:var(--mono);color:var(--muted);font-size:11px">${e.id}</td>
       <td style="font-weight:600">${e.display_name}</td>
       <td><input type="number" value="${e.daily_rate}"        id="dr-${e.id}" style="width:78px"/></td>
       <td><input type="number" value="${e.overtime_rate}"     id="or-${e.id}" style="width:68px"/></td>
-      <td><input type="number" value="${e.labor_insurance}"   id="li-${e.id}" style="width:68px"/></td>
-      <td><input type="number" value="${e.health_insurance}"  id="hi-${e.id}" style="width:68px"/></td>
-      <td><input type="number" value="${e.tax||0}"            id="tx-${e.id}" style="width:68px"/></td>
-      <td><input type="number" value="${e.agency_fee||0}"     id="af-${e.id}" style="width:68px"/></td>
+      <td ${dc("labor_insurance")}><input type="number" value="${e.labor_insurance}"   id="li-${e.id}" style="width:68px"/></td>
+      <td ${dc("health_insurance")}><input type="number" value="${e.health_insurance}"  id="hi-${e.id}" style="width:68px"/></td>
+      <td ${dc("tax")}><input type="number" value="${e.tax||0}"            id="tx-${e.id}" style="width:68px"/></td>
+      <td ${dc("agency_fee")}><input type="number" value="${e.agency_fee||0}"     id="af-${e.id}" style="width:68px"/></td>
       <td><select id="pm-${e.id}" style="width:80px">
         <option value="cash"     ${(e.payment_method||'cash')==='cash'    ?'selected':''}>現金</option>
         <option value="transfer" ${(e.payment_method||'cash')==='transfer'?'selected':''}>轉帳</option>

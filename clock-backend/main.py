@@ -33,6 +33,10 @@ pool: asyncpg.Pool | None = None
 async def startup():
     global pool
     pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5, statement_cache_size=0)
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value BOOLEAN NOT NULL)"
+        )
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -91,11 +95,28 @@ class SalaryPeriodUpdate(BaseModel):
     note:   Optional[str] = None
     status: Optional[str] = None
 
+class DeductionSettingsUpdate(BaseModel):
+    labor_insurance:  Optional[bool] = None
+    health_insurance: Optional[bool] = None
+    tax:              Optional[bool] = None
+    agency_fee:       Optional[bool] = None
+
 # ─── 工具 ────────────────────────────────────────────────────────
 
 def check_admin(secret: str):
     if not ADMIN_SECRET or secret != ADMIN_SECRET:
         raise HTTPException(status_code=403, detail="管理員權限不足")
+
+DEDUCTION_KEYS = ["labor_insurance", "health_insurance", "tax", "agency_fee"]
+
+async def get_deduction_settings(conn) -> dict:
+    """扣除項目開關，未設定時預設啟用"""
+    rows = await conn.fetch(
+        "SELECT key, value FROM app_settings WHERE key = ANY($1::text[])",
+        [f"deduct_{k}" for k in DEDUCTION_KEYS]
+    )
+    stored = {r["key"]: r["value"] for r in rows}
+    return {k: stored.get(f"deduct_{k}", True) for k in DEDUCTION_KEYS}
 
 def action_to_text(action: str) -> str:
     return "上班" if action == "clock_in" else "下班"
@@ -281,6 +302,34 @@ async def admin_delete_employee(
     await conn.execute("DELETE FROM employees      WHERE id=$1", employee_id)
     return {"message": f"員工 {emp['display_name']} 已刪除"}
 
+# ─── 管理員：扣除項目開關 ──────────────────────────────────────────
+
+@app.get("/api/admin/settings")
+async def admin_get_settings(
+    x_admin_secret: str = Header(default=""),
+    conn=Depends(get_db)
+):
+    check_admin(x_admin_secret)
+    return {"deductions": await get_deduction_settings(conn)}
+
+@app.patch("/api/admin/settings")
+async def admin_update_settings(
+    body: DeductionSettingsUpdate,
+    x_admin_secret: str = Header(default=""),
+    conn=Depends(get_db)
+):
+    check_admin(x_admin_secret)
+    updates = {k: v for k, v in body.dict().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="沒有要更新的欄位")
+    for k, v in updates.items():
+        await conn.execute(
+            """INSERT INTO app_settings (key, value) VALUES ($1,$2)
+               ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value""",
+            f"deduct_{k}", v
+        )
+    return {"message": "設定已更新", "deductions": await get_deduction_settings(conn)}
+
 # ─── 管理員：出工日 ────────────────────────────────────────────────
 
 @app.get("/api/admin/workdays/{employee_id}")
@@ -455,12 +504,13 @@ async def admin_create_salary_period(
     ot_rate        = int(ot_row["rate"])
     ot_amount      = int(ot_row["total_amount"])
 
-    # 快照
+    # 快照（扣除項目開關關閉時以 0 計算，員工設定值不變）
+    deduct     = await get_deduction_settings(conn)
     daily_rate = emp["daily_rate"]
-    labor_ins  = emp["labor_insurance"]
-    health_ins = emp["health_insurance"]
-    tax        = emp.get("tax", 0) or 0
-    agency_fee = emp.get("agency_fee", 0) or 0
+    labor_ins  = (emp["labor_insurance"] or 0)  if deduct["labor_insurance"]  else 0
+    health_ins = (emp["health_insurance"] or 0) if deduct["health_insurance"] else 0
+    tax        = (emp.get("tax", 0) or 0)        if deduct["tax"]              else 0
+    agency_fee = (emp.get("agency_fee", 0) or 0) if deduct["agency_fee"]       else 0
 
     gross = int(daily_rate * total_days) + ot_amount
     net   = gross - labor_ins - health_ins - tax - agency_fee - body.loan_deduction
