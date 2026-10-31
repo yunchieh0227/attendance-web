@@ -352,8 +352,8 @@ function renderEmpTable() {
     <tr><th>ID</th><th>姓名</th><th>日薪</th><th>加班費/hr</th>${dth("labor_insurance")}${dth("health_insurance")}${dth("tax")}${dth("agency_fee")}<th>付款方式</th><th>狀態</th><th>操作</th></tr>
     ${employees.map(e=>`<tr>
       <td style="font-family:var(--mono);color:var(--muted);font-size:11px">${e.id}</td>
-      <td style="font-weight:600">${e.display_name}</td>
-      <td><input type="number" value="${e.daily_rate}"        id="dr-${e.id}" style="width:78px"/></td>
+      <td><input type="text" value="${e.display_name.replace(/"/g,'&quot;')}" id="nm-${e.id}" style="width:110px;font-weight:600"/></td>
+      <td><input type="number" value="${e.daily_rate}"       id="dr-${e.id}" style="width:78px"/></td>
       <td><input type="number" value="${e.overtime_rate}"     id="or-${e.id}" style="width:68px"/></td>
       <td ${dc("labor_insurance")}><input type="number" value="${e.labor_insurance}"   id="li-${e.id}" style="width:68px"/></td>
       <td ${dc("health_insurance")}><input type="number" value="${e.health_insurance}"  id="hi-${e.id}" style="width:68px"/></td>
@@ -376,7 +376,10 @@ async function saveEmp(id) {
   try {
     const g = k => +document.getElementById(k+"-"+id).value;
     const pm = document.getElementById("pm-"+id).value;
+    const name = document.getElementById("nm-"+id).value.trim();
+    if (!name) { toast("姓名不可空白","error"); return; }
     await api("PATCH", `/api/admin/employees/${id}`, {
+      display_name: name,
       daily_rate:g("dr"), overtime_rate:g("or"), labor_insurance:g("li"),
       health_insurance:g("hi"), tax:g("tx"), agency_fee:g("af"),
       payment_method: pm,

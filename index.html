@@ -642,7 +642,7 @@
           ${(row.tax_snapshot||0)>0 ? `<div class="sal-row"><span>${T.tax}</span><span class="sal-deduct">-$${row.tax_snapshot.toLocaleString()}</span></div>` : ""}
           ${(row.agency_fee_snapshot||0)>0 ? `<div class="sal-row"><span>${T.agencyFee}</span><span class="sal-deduct">-$${row.agency_fee_snapshot.toLocaleString()}</span></div>` : ""}
           ${row.loan_deduction>0 ? `<div class="sal-row"><span>${T.loanDeduct}</span><span class="sal-deduct">-$${row.loan_deduction.toLocaleString()}</span></div>` : ""}
-          ${row.loan_deduction>0 ? `<div class="sal-row"><span>${T.loanBalance}</span><span style="color:#e53935">$${(row.loan_remaining_after||0).toLocaleString()}</span></div>` : ""}
+          ${(row.loan_remaining_after||0)>0 ? `<div class="sal-row"><span>${T.loanBalance}</span><span style="color:#e53935">$${row.loan_remaining_after.toLocaleString()}</span></div>` : ""}
           ${row.note ? `<div class="sal-row"><span>${T.noteLabel}</span><span style="color:#888">${row.note}</span></div>` : ""}
           <div class="sal-row total"><span>${T.netSalary}</span><span>$${row.net_salary?.toLocaleString()}</span></div>
         </div>

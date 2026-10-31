@@ -61,7 +61,8 @@ class ClockRequest(BaseModel):
     address_text: Optional[str] = None
 
 class EmployeeUpdate(BaseModel):
-    daily_rate:       Optional[int]  = None
+    display_name:     Optional[str]  = None
+    daily_rate:      Optional[int]  = None
     overtime_rate:    Optional[int]  = None
     labor_insurance:  Optional[int]  = None
     health_insurance: Optional[int]  = None
@@ -134,12 +135,9 @@ async def verify_line_id_token(id_token: str) -> dict:
     return resp.json()
 
 async def get_or_create_employee(conn, line_user_id: str, display_name: str) -> int:
+    # 名字只在首次建立時寫入，之後以後台設定為準
     row = await conn.fetchrow("SELECT id FROM employees WHERE line_user_id=$1", line_user_id)
     if row:
-        await conn.execute(
-            "UPDATE employees SET display_name=$1 WHERE line_user_id=$2",
-            display_name, line_user_id
-        )
         return row["id"]
     row = await conn.fetchrow(
         "INSERT INTO employees (line_user_id, display_name) VALUES ($1,$2) RETURNING id",
@@ -274,6 +272,10 @@ async def admin_update_employee(
 ):
     check_admin(x_admin_secret)
     updates = {k: v for k, v in body.dict().items() if v is not None}
+    if "display_name" in updates:
+        updates["display_name"] = updates["display_name"].strip()
+        if not updates["display_name"]:
+            raise HTTPException(status_code=400, detail="姓名不可空白")
     if not updates:
         raise HTTPException(status_code=400, detail="沒有要更新的欄位")
     set_clause = ", ".join(f"{k}=${i+2}" for i, k in enumerate(updates))
